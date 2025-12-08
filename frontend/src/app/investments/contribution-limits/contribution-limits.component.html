@@ -46,7 +46,7 @@
               <mat-icon>{{ getAccountIcon(item.accountType) }}</mat-icon>
               {{ item.accountType }}
             </td>
-            <td class="limit-cell">
+            <td class="limit-cell" data-label="Limit">
               <mat-form-field appearance="outline" class="limit-input">
                 <span matPrefix>$&nbsp;</span>
                 <input matInput type="number" 
@@ -56,11 +56,11 @@
                        placeholder="0">
               </mat-form-field>
             </td>
-            <td class="used-cell">{{ formatCurrency(item.used) }}</td>
-            <td class="remaining-cell" [class.warning]="item.remaining < 0">
+            <td class="used-cell" data-label="Used">{{ formatCurrency(item.used) }}</td>
+            <td class="remaining-cell" data-label="Remaining" [class.warning]="item.remaining < 0">
               {{ formatCurrency(item.remaining) }}
             </td>
-            <td class="progress-cell">
+            <td class="progress-cell" data-label="Progress">
               <div class="progress-container">
                 <mat-progress-bar mode="determinate" 
                                 [value]="calculateProgress(item.used, item.limit)"
