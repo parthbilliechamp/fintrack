@@ -136,6 +136,12 @@ export class ExpenseListComponent implements OnInit {
     return this.expenseService.formatCurrency(amount);
   }
 
+  getCategoryTotal(category: string): number {
+    return this.expenses()
+      .filter(exp => exp.category === category)
+      .reduce((sum, exp) => sum + exp.amount, 0);
+  }
+
   getCategoryIcon(category: string): string {
     const icons: { [key: string]: string } = {
       'Dine': 'restaurant',

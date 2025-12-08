@@ -1,0 +1,172 @@
+<div class="history-container">
+  <!-- Header -->
+  <div class="history-header">
+    <div class="header-left">
+      <h2>Expense History</h2>
+      <p class="subtitle">Visual overview of your spending patterns</p>
+    </div>
+    <div class="header-controls">
+      <button mat-stroked-button routerLink="/expenses" class="nav-btn">
+        <mat-icon>list</mat-icon>
+        Expenses
+      </button>
+      <button mat-stroked-button routerLink="/expenses/dashboard" class="nav-btn">
+        <mat-icon>dashboard</mat-icon>
+        Dashboard
+      </button>
+      <mat-form-field appearance="outline" class="year-select">
+        <mat-label>Year</mat-label>
+        <mat-select [(ngModel)]="selectedYear" (selectionChange)="onYearChange()">
+          <mat-option *ngFor="let year of years" [value]="year">
+            {{ year }}
+          </mat-option>
+        </mat-select>
+      </mat-form-field>
+    </div>
+  </div>
+
+  <!-- Loading Spinner -->
+  <div class="loading-container" *ngIf="loading()">
+    <mat-spinner diameter="50"></mat-spinner>
+    <p>Loading expense history...</p>
+  </div>
+
+  <div class="history-content" *ngIf="!loading()">
+    <!-- Quick Stats Cards -->
+    <div class="stats-grid">
+      <mat-card class="stat-card total">
+        <mat-card-content>
+          <div class="stat-icon">
+            <mat-icon>account_balance_wallet</mat-icon>
+          </div>
+          <div class="stat-details">
+            <span class="stat-label">Total for {{ selectedYear }}</span>
+            <span class="stat-value">{{ formatCurrency(getTotalForYear()) }}</span>
+          </div>
+        </mat-card-content>
+      </mat-card>
+
+      <mat-card class="stat-card average">
+        <mat-card-content>
+          <div class="stat-icon">
+            <mat-icon>show_chart</mat-icon>
+          </div>
+          <div class="stat-details">
+            <span class="stat-label">Monthly Average</span>
+            <span class="stat-value">{{ formatCurrency(getAverageMonthlyExpense()) }}</span>
+          </div>
+        </mat-card-content>
+      </mat-card>
+
+      <mat-card class="stat-card highest" *ngIf="getHighestMonth()">
+        <mat-card-content>
+          <div class="stat-icon warning">
+            <mat-icon>trending_up</mat-icon>
+          </div>
+          <div class="stat-details">
+            <span class="stat-label">Highest Month</span>
+            <span class="stat-value">{{ getHighestMonth()?.month }}</span>
+            <span class="stat-sublabel">{{ formatCurrency(getHighestMonth()?.total || 0) }}</span>
+          </div>
+        </mat-card-content>
+      </mat-card>
+
+      <mat-card class="stat-card lowest" *ngIf="getLowestMonth()">
+        <mat-card-content>
+          <div class="stat-icon success">
+            <mat-icon>trending_down</mat-icon>
+          </div>
+          <div class="stat-details">
+            <span class="stat-label">Lowest Month</span>
+            <span class="stat-value">{{ getLowestMonth()?.month }}</span>
+            <span class="stat-sublabel">{{ formatCurrency(getLowestMonth()?.total || 0) }}</span>
+          </div>
+        </mat-card-content>
+      </mat-card>
+    </div>
+
+    <!-- Overall Expense Chart -->
+    <mat-card class="chart-card">
+      <mat-card-header>
+        <mat-card-title>
+          <mat-icon>bar_chart</mat-icon>
+          Overall Monthly Expenses
+        </mat-card-title>
+        <mat-card-subtitle>
+          Monthly expense totals for {{ selectedYear }}. Red bars indicate months above average spending.
+        </mat-card-subtitle>
+      </mat-card-header>
+      <mat-card-content>
+        <div class="chart-wrapper overall-chart">
+          <canvas #overallChart></canvas>
+        </div>
+      </mat-card-content>
+    </mat-card>
+
+    <!-- Category Breakdown Chart -->
+    <mat-card class="chart-card">
+      <mat-card-header>
+        <mat-card-title>
+          <mat-icon>pie_chart</mat-icon>
+          Expense Breakdown by Category
+        </mat-card-title>
+        <mat-card-subtitle>
+          See how your spending is distributed across categories each month
+        </mat-card-subtitle>
+      </mat-card-header>
+      <mat-card-content>
+        <div class="chart-wrapper category-chart">
+          <canvas #categoryBreakdownChart></canvas>
+        </div>
+      </mat-card-content>
+    </mat-card>
+
+    <!-- Category Summary Table -->
+    <mat-card class="summary-card" *ngIf="categoryData().length > 0">
+      <mat-card-header>
+        <mat-card-title>
+          <mat-icon>summarize</mat-icon>
+          Category Summary for {{ selectedYear }}
+        </mat-card-title>
+      </mat-card-header>
+      <mat-card-content>
+        <div class="category-summary-grid">
+          <div class="category-summary-item" *ngFor="let category of categoryData()">
+            <div class="category-info">
+              <div class="category-icon" [style.background-color]="categoryColors[category.category]">
+                <mat-icon>{{ getCategoryIcon(category.category) }}</mat-icon>
+              </div>
+              <div class="category-details">
+                <span class="category-name">{{ category.category }}</span>
+                <span class="category-count">{{ category.count }} transactions</span>
+              </div>
+            </div>
+            <div class="category-amount">
+              <span class="amount">{{ formatCurrency(category.total) }}</span>
+              <span class="percentage" *ngIf="category.percentage">{{ category.percentage | number:'1.1-1' }}%</span>
+            </div>
+            <div class="category-bar">
+              <div class="bar-fill" 
+                   [style.width.%]="category.percentage || 0"
+                   [style.background-color]="categoryColors[category.category]">
+              </div>
+            </div>
+          </div>
+        </div>
+      </mat-card-content>
+    </mat-card>
+
+    <!-- Empty State -->
+    <mat-card class="empty-state" *ngIf="monthlyData().length === 0 || getTotalForYear() === 0">
+      <mat-card-content>
+        <mat-icon>insert_chart_outlined</mat-icon>
+        <h3>No expense data for {{ selectedYear }}</h3>
+        <p>Start adding expenses to see your spending history visualized here.</p>
+        <button mat-raised-button color="primary" routerLink="/expenses/new">
+          <mat-icon>add</mat-icon>
+          Add Expense
+        </button>
+      </mat-card-content>
+    </mat-card>
+  </div>
+</div>

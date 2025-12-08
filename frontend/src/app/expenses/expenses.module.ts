@@ -5,6 +5,7 @@ import { ExpensesRoutingModule } from './expenses-routing.module';
 import { ExpenseListComponent } from './expense-list/expense-list.component';
 import { ExpenseFormComponent } from './expense-form/expense-form.component';
 import { ExpenseDashboardComponent } from './expense-dashboard/expense-dashboard.component';
+import { ExpenseHistoryComponent } from './expense-history/expense-history.component';
 
 @NgModule({
   imports: [
@@ -13,7 +14,8 @@ import { ExpenseDashboardComponent } from './expense-dashboard/expense-dashboard
     ExpensesRoutingModule,
     ExpenseListComponent,
     ExpenseFormComponent,
-    ExpenseDashboardComponent
+    ExpenseDashboardComponent,
+    ExpenseHistoryComponent
   ]
 })
 export class ExpensesModule { }

@@ -1,4 +1,4 @@
-import { Component, OnInit, ElementRef, ViewChild, AfterViewInit, ViewEncapsulation } from '@angular/core';
+import { Component, OnInit, ElementRef, ViewChild, AfterViewChecked, ViewEncapsulation } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { RouterModule } from '@angular/router';
 import { MatCardModule } from '@angular/material/card';
@@ -23,13 +23,14 @@ import { InvestmentService } from '../../shared/services/investment.service';
     MatTabsModule
   ]
 })
-export class InvestmentDashboardComponent implements OnInit, AfterViewInit {
+export class InvestmentDashboardComponent implements OnInit, AfterViewChecked {
   @ViewChild('portfolioChart') portfolioChart!: ElementRef<HTMLCanvasElement>;
   @ViewChild('allocationChart') allocationChart!: ElementRef<HTMLCanvasElement>;
 
   summary: any = null;
   accountTypeData: any[] = [];
   charts: { [key: string]: Chart } = {};
+  private chartsInitialized = false;
 
   constructor(private investmentService: InvestmentService) {}
 
@@ -37,21 +38,34 @@ export class InvestmentDashboardComponent implements OnInit, AfterViewInit {
     this.loadInvestmentData();
   }
 
-  ngAfterViewInit(): void {
-    this.initializeCharts();
+  ngAfterViewChecked(): void {
+    // Initialize charts when canvas elements become available (after *ngIf renders them)
+    if (!this.chartsInitialized && this.portfolioChart?.nativeElement && this.allocationChart?.nativeElement) {
+      this.initializeCharts();
+      this.chartsInitialized = true;
+      
+      // Apply any data that was loaded before charts were initialized
+      if (this.accountTypeData.length > 0) {
+        this.updateCharts();
+      }
+    }
   }
 
   private loadInvestmentData(): void {
     // Get overall summary from backend
     this.investmentService.getInvestmentSummary().subscribe(data => {
       this.summary = data;
-      this.updateCharts();
+      if (this.chartsInitialized) {
+        this.updateCharts();
+      }
     });
 
     // Get account type aggregates from backend
     this.investmentService.getInvestmentsByAccountType().subscribe(data => {
       this.accountTypeData = data;
-      this.updateCharts();
+      if (this.chartsInitialized) {
+        this.updateCharts();
+      }
     });
   }
 

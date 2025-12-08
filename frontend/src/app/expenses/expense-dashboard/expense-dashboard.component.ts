@@ -1,4 +1,4 @@
-import { Component, OnInit, ViewChild, ElementRef, AfterViewInit, signal } from '@angular/core';
+import { Component, OnInit, ViewChild, ElementRef, AfterViewChecked, signal } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { RouterModule } from '@angular/router';
 import { MatCardModule } from '@angular/material/card';
@@ -31,7 +31,7 @@ Chart.register(...registerables);
     MatFormFieldModule
   ]
 })
-export class ExpenseDashboardComponent implements OnInit, AfterViewInit {
+export class ExpenseDashboardComponent implements OnInit, AfterViewChecked {
   @ViewChild('monthlyChart') monthlyChartRef!: ElementRef<HTMLCanvasElement>;
   @ViewChild('categoryChart') categoryChartRef!: ElementRef<HTMLCanvasElement>;
 
@@ -40,6 +40,11 @@ export class ExpenseDashboardComponent implements OnInit, AfterViewInit {
   
   monthlyChart: Chart | null = null;
   categoryChart: Chart | null = null;
+  
+  // Store data for charts to handle race condition
+  private monthlyData: MonthlyAggregate[] = [];
+  private categoryData: CategoryAggregate[] = [];
+  private chartsInitialized = false;
 
   selectedYear: number;
   years: number[] = [];
@@ -54,8 +59,20 @@ export class ExpenseDashboardComponent implements OnInit, AfterViewInit {
     this.loadDashboardData();
   }
 
-  ngAfterViewInit(): void {
-    this.initializeCharts();
+  ngAfterViewChecked(): void {
+    // Initialize charts when canvas elements become available (after *ngIf renders them)
+    if (!this.chartsInitialized && this.monthlyChartRef?.nativeElement && this.categoryChartRef?.nativeElement) {
+      this.initializeCharts();
+      this.chartsInitialized = true;
+      
+      // Apply any data that was loaded before charts were initialized
+      if (this.monthlyData.length > 0) {
+        this.updateMonthlyChart(this.monthlyData);
+      }
+      if (this.categoryData.length > 0) {
+        this.updateCategoryChart(this.categoryData);
+      }
+    }
   }
 
   loadDashboardData(): void {
@@ -69,12 +86,18 @@ export class ExpenseDashboardComponent implements OnInit, AfterViewInit {
 
     // Load monthly data
     this.expenseService.getMonthlyAggregates(this.selectedYear).subscribe(data => {
-      this.updateMonthlyChart(data);
+      this.monthlyData = data;
+      if (this.chartsInitialized) {
+        this.updateMonthlyChart(data);
+      }
     });
 
     // Load category data
     this.expenseService.getCategoryAggregates(this.selectedYear).subscribe(data => {
-      this.updateCategoryChart(data);
+      this.categoryData = data;
+      if (this.chartsInitialized) {
+        this.updateCategoryChart(data);
+      }
     });
   }
 
@@ -194,6 +217,11 @@ export class ExpenseDashboardComponent implements OnInit, AfterViewInit {
 
   formatCurrency(amount: number): string {
     return this.expenseService.formatCurrency(amount);
+  }
+
+  getCategoryTotal(category: string): number {
+    const categoryItem = this.categoryData.find(item => item.category === category);
+    return categoryItem?.total || 0;
   }
 
   getCategoryIcon(category: string): string {

@@ -5,6 +5,7 @@ import { MatCardModule } from '@angular/material/card';
 import { MatButtonModule } from '@angular/material/button';
 import { MatIconModule } from '@angular/material/icon';
 import { MatProgressBarModule } from '@angular/material/progress-bar';
+import { MatProgressSpinnerModule } from '@angular/material/progress-spinner';
 import { InvestmentService } from '../../shared/services/investment.service';
 
 @Component({
@@ -18,7 +19,8 @@ import { InvestmentService } from '../../shared/services/investment.service';
     MatCardModule,
     MatButtonModule,
     MatIconModule,
-    MatProgressBarModule
+    MatProgressBarModule,
+    MatProgressSpinnerModule
   ]
 })
 export class InvestmentOverviewComponent implements OnInit {
@@ -30,6 +32,7 @@ export class InvestmentOverviewComponent implements OnInit {
     used: number;
     remaining: number;
   }> = [];
+  loading = true;
 
   constructor(private investmentService: InvestmentService) {}
 
@@ -39,22 +42,46 @@ export class InvestmentOverviewComponent implements OnInit {
   }
 
   private loadInvestmentData(): void {
+    let completedRequests = 0;
+    const checkComplete = () => {
+      completedRequests++;
+      if (completedRequests >= 3) {
+        this.loading = false;
+      }
+    };
+
     // Get overall summary from backend
-    this.investmentService.getInvestmentSummary().subscribe(data => {
-      this.summary = data;
+    this.investmentService.getInvestmentSummary().subscribe({
+      next: data => {
+        this.summary = data;
+      },
+      error: () => {},
+      complete: checkComplete
     });
 
     // Get account type aggregates from backend
-    this.investmentService.getInvestmentsByAccountType().subscribe(data => {
-      this.accountTypeData = data;
+    this.investmentService.getInvestmentsByAccountType().subscribe({
+      next: data => {
+        this.accountTypeData = data;
+      },
+      error: () => {},
+      complete: checkComplete
     });
   }
 
   private loadContributionStatus(): void {
     const currentYear = new Date().getFullYear();
     this.investmentService.getContributionStatus(currentYear)
-      .subscribe(status => {
-        this.contributionStatus = status;
+      .subscribe({
+        next: status => {
+          this.contributionStatus = status;
+        },
+        error: () => {
+          this.loading = false;
+        },
+        complete: () => {
+          // This is the third request
+        }
       });
   }
 

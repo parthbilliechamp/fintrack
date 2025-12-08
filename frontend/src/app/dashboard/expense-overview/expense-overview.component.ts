@@ -3,6 +3,7 @@ import { CommonModule } from '@angular/common';
 import { MatCardModule } from '@angular/material/card';
 import { MatButtonModule } from '@angular/material/button';
 import { MatIconModule } from '@angular/material/icon';
+import { MatProgressSpinnerModule } from '@angular/material/progress-spinner';
 import { RouterModule } from '@angular/router';
 import { ExpenseService } from '../../shared/services/expense.service';
 
@@ -16,6 +17,7 @@ import { ExpenseService } from '../../shared/services/expense.service';
     MatCardModule,
     MatButtonModule,
     MatIconModule,
+    MatProgressSpinnerModule,
     RouterModule
   ]
 })
@@ -23,6 +25,7 @@ export class ExpenseOverviewComponent implements OnInit {
   monthlyData: any[] = [];
   categoryData: any[] = [];
   summary: any = null;
+  loading = true;
   
   constructor(private expenseService: ExpenseService) {}
 
@@ -32,24 +35,43 @@ export class ExpenseOverviewComponent implements OnInit {
 
   private loadExpenseData(): void {
     const currentYear = new Date().getFullYear();
-    const currentMonth = new Date().getMonth();
 
-    // Get monthly aggregates for the past 12 months
-    this.expenseService.getMonthlyAggregates()
-      .subscribe(data => {
-        this.monthlyData = data;
+    let completedRequests = 0;
+    const checkComplete = () => {
+      completedRequests++;
+      if (completedRequests >= 3) {
+        this.loading = false;
+      }
+    };
+
+    // Get monthly aggregates for the year
+    this.expenseService.getMonthlyAggregates(currentYear)
+      .subscribe({
+        next: data => {
+          this.monthlyData = data;
+        },
+        error: () => {},
+        complete: checkComplete
       });
 
-    // Get category aggregates for current month
-    this.expenseService.getCategoryAggregates(currentYear, currentMonth)
-      .subscribe(data => {
-        this.categoryData = data;
+    // Get category aggregates for the year
+    this.expenseService.getCategoryAggregates(currentYear)
+      .subscribe({
+        next: data => {
+          this.categoryData = data;
+        },
+        error: () => {},
+        complete: checkComplete
       });
 
     // Get overall summary
-    this.expenseService.getExpenseSummary()
-      .subscribe(data => {
-        this.summary = data;
+    this.expenseService.getExpenseSummary(currentYear)
+      .subscribe({
+        next: data => {
+          this.summary = data;
+        },
+        error: () => {},
+        complete: checkComplete
       });
   }
 
@@ -62,5 +84,17 @@ export class ExpenseOverviewComponent implements OnInit {
 
   calculatePercentageOfTotal(amount: number): number {
     return this.summary && this.summary.total > 0 ? (amount / this.summary.total) * 100 : 0;
+  }
+
+  calculateMonthlyBarWidth(amount: number): number {
+    if (!this.monthlyData || this.monthlyData.length === 0) return 0;
+    const maxAmount = Math.max(...this.monthlyData.map(m => m.total));
+    return maxAmount > 0 ? (amount / maxAmount) * 100 : 0;
+  }
+
+  calculateCategoryBarWidth(amount: number): number {
+    if (!this.categoryData || this.categoryData.length === 0) return 0;
+    const maxAmount = Math.max(...this.categoryData.map(c => c.total));
+    return maxAmount > 0 ? (amount / maxAmount) * 100 : 0;
   }
 }

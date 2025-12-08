@@ -4,19 +4,54 @@
   margin: 0 auto;
 
   .page-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
     margin-bottom: 24px;
+    padding-bottom: 20px;
+    border-bottom: 1px solid var(--border-light);
 
-    h2 {
-      margin: 0 0 4px 0;
-      font-size: 24px;
-      font-weight: 600;
-      color: var(--text-primary);
+    .header-left {
+      h2 {
+        margin: 0 0 4px 0;
+        font-size: 32px;
+        font-weight: 700;
+        color: var(--text-primary);
+        letter-spacing: -0.5px;
+      }
+
+      .subtitle {
+        margin: 0;
+        font-size: 14px;
+        color: var(--text-secondary);
+      }
     }
 
-    .subtitle {
-      margin: 0;
-      font-size: 14px;
-      color: var(--text-secondary);
+    .header-actions {
+      display: flex;
+      gap: 12px;
+
+      .nav-btn {
+        mat-icon {
+          margin-right: 6px;
+          font-size: 18px;
+          width: 18px;
+          height: 18px;
+        }
+      }
+    }
+
+    @media (max-width: 640px) {
+      flex-direction: column;
+      gap: 16px;
+
+      .header-actions {
+        width: 100%;
+
+        .nav-btn {
+          flex: 1;
+        }
+      }
     }
   }
 
@@ -62,11 +97,11 @@
   // Stats Grid (matching Overview design)
   .stats-grid {
     display: grid;
-    grid-template-columns: repeat(3, 1fr);
+    grid-template-columns: repeat(4, 1fr);
     gap: 24px;
     margin-bottom: 24px;
 
-    @media (max-width: 1024px) {
+    @media (max-width: 1200px) {
       grid-template-columns: repeat(2, 1fr);
     }
 
@@ -146,26 +181,34 @@
 
     // Card-specific accent colors
     &.total-expenses .stat-icon {
-      background: var(--primary-100);
+      background: var(--primary-100, rgba(99, 102, 241, 0.1));
 
       mat-icon {
-        color: var(--primary-900);
+        color: var(--primary-900, #3730a3);
       }
     }
 
-    &.transaction-count .stat-icon {
-      background: rgba(59, 130, 246, 0.1);
+    &.dining-expenses .stat-icon {
+      background: rgba(239, 68, 68, 0.1);
 
       mat-icon {
-        color: var(--info);
+        color: #dc2626;
       }
     }
 
-    &.average-expense .stat-icon {
+    &.grocery-expenses .stat-icon {
       background: rgba(34, 197, 94, 0.1);
 
       mat-icon {
-        color: var(--success);
+        color: #16a34a;
+      }
+    }
+
+    &.personal-expenses .stat-icon {
+      background: rgba(59, 130, 246, 0.1);
+
+      mat-icon {
+        color: #2563eb;
       }
     }
   }

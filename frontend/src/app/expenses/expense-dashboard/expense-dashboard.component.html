@@ -1,15 +1,27 @@
 <div class="dashboard-container">
   <!-- Header -->
   <div class="dashboard-header">
-    <h2>Expense Dashboard</h2>
-    <mat-form-field appearance="outline" class="year-select">
-      <mat-label>Year</mat-label>
-      <mat-select [(ngModel)]="selectedYear" (selectionChange)="onYearChange()">
-        <mat-option *ngFor="let year of years" [value]="year">
-          {{ year }}
-        </mat-option>
-      </mat-select>
-    </mat-form-field>
+    <div class="header-left">
+      <h2>Expense Dashboard</h2>
+    </div>
+    <div class="header-controls">
+      <button mat-stroked-button routerLink="/expenses" class="nav-btn">
+        <mat-icon>list</mat-icon>
+        Expenses
+      </button>
+      <button mat-stroked-button routerLink="/expenses/history" class="nav-btn">
+        <mat-icon>bar_chart</mat-icon>
+        History
+      </button>
+      <mat-form-field appearance="outline" class="year-select">
+        <mat-label>Year</mat-label>
+        <mat-select [(ngModel)]="selectedYear" (selectionChange)="onYearChange()">
+          <mat-option *ngFor="let year of years" [value]="year">
+            {{ year }}
+          </mat-option>
+        </mat-select>
+      </mat-form-field>
+    </div>
   </div>
 
   <!-- Loading Spinner -->
@@ -34,28 +46,41 @@
         </mat-card-content>
       </mat-card>
 
-      <mat-card class="stat-card transaction-count">
+      <mat-card class="stat-card dining-expenses">
         <mat-card-content>
           <div class="stat-icon">
-            <mat-icon>receipt</mat-icon>
+            <mat-icon>restaurant</mat-icon>
           </div>
           <div class="stat-details">
-            <span class="stat-label">Transaction Count</span>
-            <span class="stat-value">{{ summary()?.count || 0 }}</span>
-            <span class="stat-sublabel">Total transactions</span>
+            <span class="stat-label">Dining Expenses</span>
+            <span class="stat-value">{{ formatCurrency(getCategoryTotal('Dine')) }}</span>
+            <span class="stat-sublabel">Restaurants & takeout</span>
           </div>
         </mat-card-content>
       </mat-card>
 
-      <mat-card class="stat-card average-expense">
+      <mat-card class="stat-card grocery-expenses">
         <mat-card-content>
           <div class="stat-icon">
-            <mat-icon>trending_up</mat-icon>
+            <mat-icon>shopping_cart</mat-icon>
           </div>
           <div class="stat-details">
-            <span class="stat-label">Average Expense</span>
-            <span class="stat-value">{{ formatCurrency(summary()?.average || 0) }}</span>
-            <span class="stat-sublabel">Per transaction</span>
+            <span class="stat-label">Grocery Expenses</span>
+            <span class="stat-value">{{ formatCurrency(getCategoryTotal('Grocery')) }}</span>
+            <span class="stat-sublabel">Food & household</span>
+          </div>
+        </mat-card-content>
+      </mat-card>
+
+      <mat-card class="stat-card personal-expenses">
+        <mat-card-content>
+          <div class="stat-icon">
+            <mat-icon>person</mat-icon>
+          </div>
+          <div class="stat-details">
+            <span class="stat-label">Personal Expenses</span>
+            <span class="stat-value">{{ formatCurrency(getCategoryTotal('Personal')) }}</span>
+            <span class="stat-sublabel">Personal spending</span>
           </div>
         </mat-card-content>
       </mat-card>
