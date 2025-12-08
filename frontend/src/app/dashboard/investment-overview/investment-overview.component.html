@@ -1,0 +1,85 @@
+<div class="investment-overview">
+  <!-- Summary Cards -->
+  <div class="summary-cards">
+    <mat-card class="total-card">
+      <mat-card-content>
+        <div class="card-header">
+          <h2>Total Portfolio Value</h2>
+          <mat-icon>account_balance</mat-icon>
+        </div>
+        <div class="card-value">{{ summary ? formatCurrency(summary.totalValue) : '$0' }}</div>
+        <div class="card-stats">
+          <span class="invested">Invested: {{ summary ? formatCurrency(summary.totalInvested) : '$0' }}</span>
+          <span class="growth" [class.positive]="summary && summary.growthPercentage >= 0">
+            {{ summary ? formatPercentage(summary.growthPercentage) : '0%' }}
+          </span>
+        </div>
+      </mat-card-content>
+    </mat-card>
+  </div>
+
+  <!-- Account Type Breakdown -->
+  <div class="account-breakdown">
+    <mat-card>
+      <mat-card-header>
+        <mat-card-title>Account Type Breakdown</mat-card-title>
+      </mat-card-header>
+      <mat-card-content>
+        <div class="account-list">
+          <div class="account-item" *ngFor="let account of accountTypeData">
+            <div class="account-header">
+              <h3>{{ account.accountType }}</h3>
+              <span class="account-growth" [class.positive]="account.growthPercentage >= 0">
+                {{ formatPercentage(account.growthPercentage) }}
+              </span>
+            </div>
+            <div class="account-values">
+              <span>Current: {{ formatCurrency(account.totalValue) }}</span>
+              <span>Invested: {{ formatCurrency(account.totalInvested) }}</span>
+            </div>
+          </div>
+        </div>
+      </mat-card-content>
+    </mat-card>
+  </div>
+
+  <!-- Contribution Limits -->
+  <div class="contribution-limits">
+    <mat-card>
+      <mat-card-header>
+        <mat-card-title>Contribution Status</mat-card-title>
+      </mat-card-header>
+      <mat-card-content>
+        <div class="limit-list">
+          <div class="limit-item" *ngFor="let status of contributionStatus">
+            <div class="limit-header">
+              <h3>{{ status.accountType }}</h3>
+              <span>{{ formatCurrency(status.remaining) }} remaining</span>
+            </div>
+            <mat-progress-bar
+              mode="determinate"
+              [value]="calculateProgress(status.used, status.limit)"
+              color="primary">
+            </mat-progress-bar>
+            <div class="limit-details">
+              <span>Used: {{ formatCurrency(status.used) }}</span>
+              <span>Limit: {{ formatCurrency(status.limit) }}</span>
+            </div>
+          </div>
+        </div>
+      </mat-card-content>
+    </mat-card>
+  </div>
+
+  <!-- Action Buttons -->
+  <div class="action-buttons">
+    <button mat-raised-button color="primary" routerLink="/investments/new">
+      <mat-icon>add</mat-icon>
+      Add Investment
+    </button>
+    <button mat-raised-button color="accent" routerLink="/investments">
+      <mat-icon>list</mat-icon>
+      View All Investments
+    </button>
+  </div>
+</div>

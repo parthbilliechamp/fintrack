@@ -1,0 +1,42 @@
+[
+  {
+    "userId": "1763158560696",
+    "category": "Dine",
+    "details": "Lunch",
+    "date": "2024-11-14",
+    "amount": 25.5,
+    "id": "1763158573157"
+  },
+  {
+    "userId": "1763159475393-mf3n819ha",
+    "category": "Grocery",
+    "details": "efsdfsd",
+    "date": "2025-11-14T23:11:00.637Z",
+    "amount": 123,
+    "id": "1763161953882-qoh9lq1d5"
+  },
+  {
+    "userId": "1763159475393-mf3n819ha",
+    "category": "Dine",
+    "details": "efsdfsd",
+    "date": "2025-11-14T23:13:11.456Z",
+    "amount": 342,
+    "id": "1763162004112-7u4k8mkhe"
+  },
+  {
+    "userId": "1763158560696",
+    "category": "Personal",
+    "details": "Lunch",
+    "date": "2025-12-08T03:07:39.461Z",
+    "amount": 123,
+    "id": "1765163320916-mckv8h86h"
+  },
+  {
+    "userId": "1763158560696",
+    "category": "Grocery",
+    "details": "Lunch",
+    "date": "2025-12-08T03:09:03.201Z",
+    "amount": 12312,
+    "id": "1765163353568-djgmthl61"
+  }
+]

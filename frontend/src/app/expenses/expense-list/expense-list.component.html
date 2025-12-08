@@ -1,0 +1,154 @@
+<div class="expense-list-container">
+  <!-- Page Header -->
+  <div class="page-header">
+    <h2>Expense Tracker</h2>
+    <p class="subtitle">{{ months[selectedMonth].name }} {{ selectedYear }}</p>
+  </div>
+
+  <!-- Filters -->
+  <div class="filters-section">
+    <mat-form-field appearance="outline">
+      <mat-label>Month</mat-label>
+      <mat-select [(ngModel)]="selectedMonth" (selectionChange)="onMonthYearChange()">
+        <mat-option *ngFor="let month of months" [value]="month.value">
+          {{ month.name }}
+        </mat-option>
+      </mat-select>
+    </mat-form-field>
+
+    <mat-form-field appearance="outline">
+      <mat-label>Year</mat-label>
+      <mat-select [(ngModel)]="selectedYear" (selectionChange)="onMonthYearChange()">
+        <mat-option *ngFor="let year of years" [value]="year">
+          {{ year }}
+        </mat-option>
+      </mat-select>
+    </mat-form-field>
+  </div>
+
+  <!-- Summary Cards -->
+  <div class="stats-grid" *ngIf="!loading()">
+    <mat-card class="stat-card total-expenses">
+      <mat-card-content>
+        <div class="stat-icon">
+          <mat-icon>account_balance_wallet</mat-icon>
+        </div>
+        <div class="stat-details">
+          <span class="stat-label">Total Expenses</span>
+          <span class="stat-value">{{ formatCurrency(totalAmount()) }}</span>
+          <span class="stat-sublabel">This period</span>
+        </div>
+      </mat-card-content>
+    </mat-card>
+
+    <mat-card class="stat-card transaction-count">
+      <mat-card-content>
+        <div class="stat-icon">
+          <mat-icon>receipt</mat-icon>
+        </div>
+        <div class="stat-details">
+          <span class="stat-label">Transaction Count</span>
+          <span class="stat-value">{{ expenses().length }}</span>
+          <span class="stat-sublabel">Total transactions</span>
+        </div>
+      </mat-card-content>
+    </mat-card>
+
+    <mat-card class="stat-card average-expense">
+      <mat-card-content>
+        <div class="stat-icon">
+          <mat-icon>trending_up</mat-icon>
+        </div>
+        <div class="stat-details">
+          <span class="stat-label">Average Expense</span>
+          <span class="stat-value">{{ formatCurrency(expenses().length > 0 ? totalAmount() / expenses().length : 0) }}</span>
+          <span class="stat-sublabel">Per transaction</span>
+        </div>
+      </mat-card-content>
+    </mat-card>
+  </div>
+
+  <!-- Expense Table Card -->
+  <mat-card class="table-card">
+    <mat-card-content>
+
+      <!-- Loading Spinner -->
+      <div class="loading-container" *ngIf="loading()">
+        <mat-spinner diameter="40"></mat-spinner>
+      </div>
+
+      <!-- Expense Table -->
+      <div class="table-container" *ngIf="!loading()">
+        <table mat-table [dataSource]="expenses()" class="expense-table">
+          <!-- Date Column -->
+          <ng-container matColumnDef="date">
+            <th mat-header-cell *matHeaderCellDef>Date</th>
+            <td mat-cell *matCellDef="let expense">{{ formatDate(expense.date) }}</td>
+          </ng-container>
+
+          <!-- Category Column -->
+          <ng-container matColumnDef="category">
+            <th mat-header-cell *matHeaderCellDef>Category</th>
+            <td mat-cell *matCellDef="let expense">
+              <div class="category-cell">
+                <mat-icon class="category-icon">{{ getCategoryIcon(expense.category) }}</mat-icon>
+                <span>{{ expense.category }}</span>
+              </div>
+            </td>
+          </ng-container>
+
+          <!-- Details Column -->
+          <ng-container matColumnDef="details">
+            <th mat-header-cell *matHeaderCellDef>Details</th>
+            <td mat-cell *matCellDef="let expense">{{ expense.details }}</td>
+          </ng-container>
+
+          <!-- Amount Column -->
+          <ng-container matColumnDef="amount">
+            <th mat-header-cell *matHeaderCellDef class="amount-header">Amount</th>
+            <td mat-cell *matCellDef="let expense" class="amount-cell">
+              {{ formatCurrency(expense.amount) }}
+            </td>
+          </ng-container>
+
+          <!-- Actions Column -->
+          <ng-container matColumnDef="actions">
+            <th mat-header-cell *matHeaderCellDef>Actions</th>
+            <td mat-cell *matCellDef="let expense">
+              <button 
+                mat-icon-button 
+                color="primary" 
+                (click)="editExpense(expense)"
+                matTooltip="Edit expense">
+                <mat-icon>edit</mat-icon>
+              </button>
+              <button 
+                mat-icon-button 
+                color="warn" 
+                (click)="deleteExpense(expense)"
+                matTooltip="Delete expense">
+                <mat-icon>delete</mat-icon>
+              </button>
+            </td>
+          </ng-container>
+
+          <tr mat-header-row *matHeaderRowDef="displayedColumns"></tr>
+          <tr mat-row *matRowDef="let row; columns: displayedColumns;"></tr>
+
+          <!-- No Data Row -->
+          <tr class="mat-row" *matNoDataRow>
+            <td class="mat-cell no-data" colspan="5">
+              <div class="no-data-message">
+                <mat-icon>info</mat-icon>
+                <p>No expenses found for {{ months[selectedMonth].name }} {{ selectedYear }}</p>
+                <button mat-raised-button color="primary" (click)="addExpense()">
+                  Add Your First Expense
+                </button>
+              </div>
+            </td>
+          </tr>
+        </table>
+      </div>
+    </mat-card-content>
+  </mat-card>
+</div>

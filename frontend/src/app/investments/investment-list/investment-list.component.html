@@ -1,0 +1,225 @@
+<div class="investment-list-container">
+  <!-- Page Header -->
+  <div class="page-header">
+    <h1>Manage Investments</h1>
+    <div class="header-actions">
+      <button mat-stroked-button class="action-btn" (click)="addTransaction()">
+        <mat-icon>add_card</mat-icon>
+        Add Transaction
+      </button>
+      <button mat-stroked-button class="action-btn" (click)="addContribution()">
+        <mat-icon>attach_money</mat-icon>
+        Contribution Limits
+      </button>
+      <button mat-flat-button color="primary" class="action-btn primary" (click)="addInvestment()">
+        <mat-icon>add</mat-icon>
+        New Account
+      </button>
+    </div>
+  </div>
+
+  <!-- Tab Navigation -->
+  <div class="tab-navigation">
+    <button class="tab-btn" [class.active]="activeTab === 'overview'" (click)="activeTab = 'overview'">
+      Overview
+    </button>
+    <button class="tab-btn" [class.active]="activeTab === 'accounts'" (click)="activeTab = 'accounts'">
+      Accounts
+    </button>
+    <button class="tab-btn" [class.active]="activeTab === 'transactions'" (click)="activeTab = 'transactions'">
+      Transactions
+    </button>
+  </div>
+
+  <!-- Overview Tab Content -->
+  <div class="tab-content" *ngIf="activeTab === 'overview'">
+    <!-- Summary Cards -->
+    <div class="stats-grid">
+      <mat-card class="stat-card">
+        <mat-card-content>
+          <span class="stat-label">Total Invested</span>
+          <span class="stat-value">{{ formatCurrency(totalInvested) }}</span>
+        </mat-card-content>
+      </mat-card>
+
+      <mat-card class="stat-card">
+        <mat-card-content>
+          <span class="stat-label">Current Portfolio Value</span>
+          <span class="stat-value">{{ formatCurrency(totalCurrent) }}</span>
+        </mat-card-content>
+      </mat-card>
+
+      <mat-card class="stat-card">
+        <mat-card-content>
+          <span class="stat-label">Total Growth</span>
+          <span class="stat-value growth" [class.positive]="totalCurrent >= totalInvested" [class.negative]="totalCurrent < totalInvested">
+            {{ totalCurrent >= totalInvested ? '+' : '' }}{{ formatCurrency(totalCurrent - totalInvested) }}
+          </span>
+        </mat-card-content>
+      </mat-card>
+    </div>
+
+    <!-- Portfolio Summary Table -->
+    <mat-card class="table-card">
+      <mat-card-header>
+        <mat-card-title>Portfolio Summary</mat-card-title>
+        <mat-card-subtitle>Breakdown by account</mat-card-subtitle>
+      </mat-card-header>
+      <mat-card-content>
+        <table class="summary-table">
+          <thead>
+            <tr>
+              <th>Account</th>
+              <th>Type</th>
+              <th class="text-right">Invested</th>
+              <th class="text-right">Current Value</th>
+              <th class="text-right">Growth</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr *ngFor="let investment of investments">
+              <td>{{ investment.accountName }}</td>
+              <td>{{ investment.accountType }}</td>
+              <td class="text-right">{{ formatCurrency(investment.investedAmount) }}</td>
+              <td class="text-right">{{ formatCurrency(investment.currentValue) }}</td>
+              <td class="text-right">
+                <span class="growth-badge" [class.positive]="investment.currentValue >= investment.investedAmount" [class.negative]="investment.currentValue < investment.investedAmount">
+                  {{ formatPercentage(calculateGrowth(investment.investedAmount, investment.currentValue)) }}
+                </span>
+              </td>
+            </tr>
+          </tbody>
+          <tfoot>
+            <tr>
+              <td colspan="2"><strong>Total</strong></td>
+              <td class="text-right"><strong>{{ formatCurrency(totalInvested) }}</strong></td>
+              <td class="text-right"><strong>{{ formatCurrency(totalCurrent) }}</strong></td>
+              <td class="text-right"></td>
+            </tr>
+          </tfoot>
+        </table>
+      </mat-card-content>
+    </mat-card>
+  </div>
+
+  <!-- Accounts Tab Content -->
+  <div class="tab-content" *ngIf="activeTab === 'accounts'">
+    <mat-card class="table-card">
+      <mat-card-header>
+        <mat-card-title>All Accounts</mat-card-title>
+      </mat-card-header>
+      <mat-card-content>
+        <table mat-table [dataSource]="investments" class="investment-table">
+          <ng-container matColumnDef="accountName">
+            <th mat-header-cell *matHeaderCellDef>Account Name</th>
+            <td mat-cell *matCellDef="let investment">{{ investment.accountName }}</td>
+          </ng-container>
+
+          <ng-container matColumnDef="accountType">
+            <th mat-header-cell *matHeaderCellDef>Type</th>
+            <td mat-cell *matCellDef="let investment">{{ investment.accountType }}</td>
+          </ng-container>
+
+          <ng-container matColumnDef="investedAmount">
+            <th mat-header-cell *matHeaderCellDef>Invested</th>
+            <td mat-cell *matCellDef="let investment">{{ formatCurrency(investment.investedAmount) }}</td>
+          </ng-container>
+
+          <ng-container matColumnDef="currentValue">
+            <th mat-header-cell *matHeaderCellDef>Current Value</th>
+            <td mat-cell *matCellDef="let investment">{{ formatCurrency(investment.currentValue) }}</td>
+          </ng-container>
+
+          <ng-container matColumnDef="growth">
+            <th mat-header-cell *matHeaderCellDef>Growth</th>
+            <td mat-cell *matCellDef="let investment">
+              <span class="growth-badge" [class.positive]="investment.currentValue >= investment.investedAmount" [class.negative]="investment.currentValue < investment.investedAmount">
+                {{ formatPercentage(calculateGrowth(investment.investedAmount, investment.currentValue)) }}
+              </span>
+            </td>
+          </ng-container>
+
+          <ng-container matColumnDef="actions">
+            <th mat-header-cell *matHeaderCellDef>Actions</th>
+            <td mat-cell *matCellDef="let investment">
+              <button mat-icon-button (click)="editInvestment(investment)">
+                <mat-icon>edit</mat-icon>
+              </button>
+              <button mat-icon-button color="warn" (click)="deleteInvestment(investment)">
+                <mat-icon>delete</mat-icon>
+              </button>
+            </td>
+          </ng-container>
+
+          <tr mat-header-row *matHeaderRowDef="displayedColumns"></tr>
+          <tr mat-row *matRowDef="let row; columns: displayedColumns;"></tr>
+
+          <tr class="mat-row" *matNoDataRow>
+            <td class="mat-cell" colspan="6">No investment accounts found</td>
+          </tr>
+        </table>
+      </mat-card-content>
+    </mat-card>
+  </div>
+
+  <!-- Transactions Tab Content -->
+  <div class="tab-content" *ngIf="activeTab === 'transactions'">
+    <mat-card class="table-card">
+      <mat-card-header>
+        <mat-card-title>Investment Transactions</mat-card-title>
+        <mat-card-subtitle>View transactions by account</mat-card-subtitle>
+      </mat-card-header>
+      <mat-card-content>
+        <div class="accounts-list" *ngIf="investments.length > 0; else noAccounts">
+          <mat-accordion>
+            <mat-expansion-panel *ngFor="let investment of investments" 
+                                 [expanded]="expandedAccountId === investment.id"
+                                 (opened)="toggleAccountExpansion(investment.id)"
+                                 (closed)="expandedAccountId === investment.id && toggleAccountExpansion(investment.id)">
+              <mat-expansion-panel-header>
+                <mat-panel-title>
+                  {{ investment.accountName }}
+                </mat-panel-title>
+                <mat-panel-description>
+                  {{ investment.accountType }} • {{ getTransactionsForAccount(investment.id).length }} transactions
+                </mat-panel-description>
+              </mat-expansion-panel-header>
+              
+              <div class="transactions-list" *ngIf="getTransactionsForAccount(investment.id).length > 0; else noTransactions">
+                <table class="transactions-table">
+                  <thead>
+                    <tr>
+                      <th>Date</th>
+                      <th class="text-right">Amount</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    <tr *ngFor="let transaction of getTransactionsForAccount(investment.id)">
+                      <td>{{ formatDate(transaction.date) }}</td>
+                      <td class="text-right amount positive">{{ formatCurrency(transaction.amount) }}</td>
+                    </tr>
+                  </tbody>
+                </table>
+              </div>
+              
+              <ng-template #noTransactions>
+                <div class="empty-state small">
+                  <p>No transactions recorded for this account</p>
+                  <button mat-stroked-button (click)="addTransaction()">Add Transaction</button>
+                </div>
+              </ng-template>
+            </mat-expansion-panel>
+          </mat-accordion>
+        </div>
+        
+        <ng-template #noAccounts>
+          <div class="empty-state">
+            <mat-icon>account_balance_wallet</mat-icon>
+            <p>No investment accounts found</p>
+            <button mat-stroked-button (click)="addInvestment()">Create Your First Account</button>
+          </div>
+        </ng-template>
+      </mat-card-content>
+    </mat-card>
+  </div>
+</div>

@@ -1,0 +1,206 @@
+// ============================================
+// Investment Form - Professional Theme
+// ============================================
+
+.page-header {
+  margin-bottom: 24px;
+
+  h2 {
+    margin: 0 0 4px 0;
+    font-size: 24px;
+    font-weight: 600;
+    color: var(--text-primary);
+  }
+
+  .subtitle {
+    margin: 0;
+    font-size: 14px;
+    color: var(--text-secondary);
+  }
+}
+
+.tab-navigation {
+  display: flex;
+  gap: 8px;
+  margin-bottom: 24px;
+
+  .tab-button {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 10px 20px;
+    border: none;
+    border-radius: var(--radius-md);
+    font-size: 14px;
+    font-weight: 500;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    background: transparent;
+    color: var(--text-secondary);
+    text-decoration: none;
+
+    mat-icon {
+      font-size: 18px;
+      width: 18px;
+      height: 18px;
+    }
+
+    &:hover {
+      background: var(--bg-secondary);
+      color: var(--text-primary);
+    }
+
+    &.active {
+      background: var(--primary);
+      color: white;
+    }
+  }
+}
+
+.investment-form-container {
+  max-width: 700px;
+  margin: 0 auto;
+  padding: 0;
+  animation: fadeIn 0.5s ease-out;
+
+  mat-card {
+    background: var(--surface) !important;
+    border: 1px solid var(--border-light) !important;
+    border-radius: var(--radius-lg) !important;
+    box-shadow: var(--shadow-sm) !important;
+    overflow: hidden;
+    
+    mat-card-header {
+      margin-bottom: 24px;
+      padding: 24px 24px 0 24px !important;
+
+      .mat-mdc-card-title {
+        font-size: 22px;
+        font-weight: 600;
+        color: var(--text-primary);
+      }
+    }
+
+    mat-card-content {
+      padding: 0 24px 24px 24px !important;
+      
+      form {
+        display: flex;
+        flex-direction: column;
+        gap: 20px;
+
+        mat-form-field {
+          width: 100%;
+          
+          ::ng-deep .mat-mdc-text-field-wrapper {
+            background: var(--bg-secondary);
+            border-radius: var(--radius-md);
+          }
+        }
+
+        .growth-indicator {
+          background: var(--bg-secondary);
+          padding: 20px;
+          border-radius: var(--radius-md);
+          text-align: center;
+          border: 1px solid var(--border-light);
+          transition: all 0.3s ease;
+
+          p {
+            margin: 0;
+            font-size: 16px;
+            font-weight: 500;
+            color: var(--text-primary);
+
+            span {
+              font-weight: 600;
+              font-size: 18px;
+              padding: 4px 12px;
+              border-radius: var(--radius-full);
+              display: inline-block;
+              margin-left: 8px;
+
+              &.positive {
+                color: var(--success);
+                background: rgba(34, 197, 94, 0.1);
+              }
+
+              &.negative {
+                color: var(--error);
+                background: rgba(239, 68, 68, 0.1);
+              }
+            }
+          }
+        }
+
+        .form-actions {
+          display: flex;
+          justify-content: flex-end;
+          gap: 12px;
+          margin-top: 16px;
+          padding-top: 20px;
+          border-top: 1px solid var(--border-light);
+          
+          button {
+            min-width: 120px;
+            padding: 10px 24px;
+            font-size: 14px;
+            font-weight: 500;
+            
+            &.mat-mdc-raised-button {
+              background: var(--primary) !important;
+              color: white !important;
+              
+              &:hover {
+                background: #2563eb !important;
+              }
+              
+              &:disabled {
+                background: var(--neutral-300) !important;
+                color: var(--neutral-500) !important;
+              }
+            }
+            
+            &.mat-mdc-button {
+              color: var(--text-secondary);
+              
+              &:hover {
+                background: var(--bg-secondary);
+              }
+            }
+          }
+        }
+      }
+    }
+  }
+}
+
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+    transform: translateY(10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+// Responsive design
+@media (max-width: 640px) {
+  .tab-navigation {
+    flex-wrap: wrap;
+  }
+
+  .investment-form-container {
+    mat-card mat-card-content form {
+      .form-actions {
+        flex-direction: column-reverse;
+
+        button {
+          width: 100%;
+        }
+      }
+    }
+  }
+}

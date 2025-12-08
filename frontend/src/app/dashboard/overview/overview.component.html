@@ -1,0 +1,80 @@
+<div class="overview-container">
+  <!-- Welcome Header -->
+  <header class="welcome-header">
+    <h1>Welcome back, {{ stats.userName || 'User' }}</h1>
+    <p class="date-subtitle">{{ getCurrentMonthName() }}</p>
+  </header>
+
+  <!-- Loading State -->
+  <div class="loading-container" *ngIf="loading">
+    <mat-spinner diameter="40"></mat-spinner>
+  </div>
+
+  <!-- Stats Cards -->
+  <div class="stats-grid" *ngIf="!loading">
+    <!-- Net Worth Card -->
+    <mat-card class="stat-card net-worth">
+      <mat-card-content>
+        <div class="stat-icon">
+          <mat-icon>account_balance</mat-icon>
+        </div>
+        <div class="stat-details">
+          <span class="stat-label">Net Worth</span>
+          <span class="stat-value">{{ formatCurrency(stats.netWorth) }}</span>
+          <span class="stat-sublabel">Total assets</span>
+        </div>
+      </mat-card-content>
+    </mat-card>
+
+    <!-- Monthly Expense Card -->
+    <mat-card class="stat-card expenses">
+      <mat-card-content>
+        <div class="stat-icon">
+          <mat-icon>receipt_long</mat-icon>
+        </div>
+        <div class="stat-details">
+          <span class="stat-label">This Month's Expenses</span>
+          <span class="stat-value expense">{{ formatCurrency(stats.currentMonthExpense) }}</span>
+          <span class="stat-sublabel">{{ getCurrentMonthName() }}</span>
+        </div>
+      </mat-card-content>
+    </mat-card>
+
+    <!-- Total Investments Card -->
+    <mat-card class="stat-card investments">
+      <mat-card-content>
+        <div class="stat-icon">
+          <mat-icon>show_chart</mat-icon>
+        </div>
+        <div class="stat-details">
+          <span class="stat-label">Total Investments</span>
+          <span class="stat-value">{{ formatCurrency(stats.totalInvestments) }}</span>
+          <span class="stat-sublabel">Current portfolio value</span>
+        </div>
+      </mat-card-content>
+    </mat-card>
+  </div>
+
+  <!-- Quick Actions -->
+  <div class="quick-actions" *ngIf="!loading">
+    <h2>Quick Actions</h2>
+    <div class="actions-grid">
+      <button mat-stroked-button routerLink="/expenses/new">
+        <mat-icon>add</mat-icon>
+        Add Expense
+      </button>
+      <button mat-stroked-button [routerLink]="['/investments', 'new']">
+        <mat-icon>add</mat-icon>
+        Add Investment
+      </button>
+      <button mat-stroked-button routerLink="/expenses">
+        <mat-icon>list</mat-icon>
+        View Expenses
+      </button>
+      <button mat-stroked-button routerLink="/investments">
+        <mat-icon>analytics</mat-icon>
+        View Investments
+      </button>
+    </div>
+  </div>
+</div>

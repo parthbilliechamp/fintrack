@@ -1,0 +1,133 @@
+<div class="dashboard-container">
+  <!-- Header -->
+  <div class="dashboard-header">
+    <h2>Expense Dashboard</h2>
+    <mat-form-field appearance="outline" class="year-select">
+      <mat-label>Year</mat-label>
+      <mat-select [(ngModel)]="selectedYear" (selectionChange)="onYearChange()">
+        <mat-option *ngFor="let year of years" [value]="year">
+          {{ year }}
+        </mat-option>
+      </mat-select>
+    </mat-form-field>
+  </div>
+
+  <!-- Loading Spinner -->
+  <div class="loading-container" *ngIf="loading()">
+    <mat-spinner diameter="50"></mat-spinner>
+    <p>Loading dashboard data...</p>
+  </div>
+
+  <div class="dashboard-content" *ngIf="!loading()">
+    <!-- Summary Cards -->
+    <div class="stats-grid">
+      <mat-card class="stat-card total-expenses">
+        <mat-card-content>
+          <div class="stat-icon">
+            <mat-icon>account_balance_wallet</mat-icon>
+          </div>
+          <div class="stat-details">
+            <span class="stat-label">Total Expenses</span>
+            <span class="stat-value">{{ formatCurrency(summary()?.total || 0) }}</span>
+            <span class="stat-sublabel">Year to date</span>
+          </div>
+        </mat-card-content>
+      </mat-card>
+
+      <mat-card class="stat-card transaction-count">
+        <mat-card-content>
+          <div class="stat-icon">
+            <mat-icon>receipt</mat-icon>
+          </div>
+          <div class="stat-details">
+            <span class="stat-label">Transaction Count</span>
+            <span class="stat-value">{{ summary()?.count || 0 }}</span>
+            <span class="stat-sublabel">Total transactions</span>
+          </div>
+        </mat-card-content>
+      </mat-card>
+
+      <mat-card class="stat-card average-expense">
+        <mat-card-content>
+          <div class="stat-icon">
+            <mat-icon>trending_up</mat-icon>
+          </div>
+          <div class="stat-details">
+            <span class="stat-label">Average Expense</span>
+            <span class="stat-value">{{ formatCurrency(summary()?.average || 0) }}</span>
+            <span class="stat-sublabel">Per transaction</span>
+          </div>
+        </mat-card-content>
+      </mat-card>
+    </div>
+
+    <!-- Charts -->
+    <div class="charts-grid">
+      <mat-card class="chart-card">
+        <mat-card-header>
+          <mat-card-title>Monthly Trends</mat-card-title>
+        </mat-card-header>
+        <mat-card-content>
+          <div class="chart-wrapper">
+            <canvas #monthlyChart></canvas>
+          </div>
+        </mat-card-content>
+      </mat-card>
+
+      <mat-card class="chart-card">
+        <mat-card-header>
+          <mat-card-title>Category Breakdown</mat-card-title>
+        </mat-card-header>
+        <mat-card-content>
+          <div class="chart-wrapper">
+            <canvas #categoryChart></canvas>
+          </div>
+        </mat-card-content>
+      </mat-card>
+    </div>
+
+    <!-- Category Details -->
+    <mat-card class="category-details" *ngIf="summary()?.byCategory && summary()!.byCategory.length > 0">
+      <mat-card-header>
+        <mat-card-title>Category Summary</mat-card-title>
+      </mat-card-header>
+      <mat-card-content>
+        <div class="category-list">
+          <div class="category-item" *ngFor="let item of summary()!.byCategory">
+            <div class="category-header">
+              <mat-icon>{{ getCategoryIcon(item.category) }}</mat-icon>
+              <span class="category-name">{{ item.category }}</span>
+            </div>
+            <div class="category-stats">
+              <div class="stat">
+                <span class="label">Total</span>
+                <span class="value">{{ formatCurrency(item.total) }}</span>
+              </div>
+              <div class="stat">
+                <span class="label">Count</span>
+                <span class="value">{{ item.count }}</span>
+              </div>
+              <div class="stat" *ngIf="item.percentage !== undefined">
+                <span class="label">Percentage</span>
+                <span class="value">{{ item.percentage.toFixed(1) }}%</span>
+              </div>
+            </div>
+          </div>
+        </div>
+      </mat-card-content>
+    </mat-card>
+
+    <!-- Empty State -->
+    <mat-card class="empty-state" *ngIf="!summary() || summary()!.count === 0">
+      <mat-card-content>
+        <mat-icon>info</mat-icon>
+        <h3>No Expenses Found</h3>
+        <p>Start tracking your expenses to see analytics here.</p>
+        <button mat-raised-button color="primary" routerLink="/expenses/new">
+          <mat-icon>add</mat-icon>
+          Add Your First Expense
+        </button>
+      </mat-card-content>
+    </mat-card>
+  </div>
+</div>

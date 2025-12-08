@@ -1,0 +1,135 @@
+// ============================================
+// Transaction Form - Professional Theme
+// ============================================
+
+.transaction-form-container {
+  max-width: 600px;
+  margin: 0 auto;
+  padding: 0;
+}
+
+.page-header {
+  margin-bottom: 24px;
+
+  h2 {
+    margin: 0 0 4px 0;
+    font-size: 24px;
+    font-weight: 600;
+    color: var(--text-primary);
+  }
+
+  .subtitle {
+    margin: 0;
+    font-size: 14px;
+    color: var(--text-secondary);
+  }
+}
+
+.back-button-container {
+  margin-bottom: 24px;
+
+  .back-btn {
+    background: var(--primary) !important;
+    color: white !important;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+
+    mat-icon {
+      font-size: 18px;
+      width: 18px;
+      height: 18px;
+    }
+
+    &:hover {
+      background: #2563eb !important;
+    }
+  }
+}
+
+.form-card {
+  background: var(--surface) !important;
+  border: 1px solid var(--border-light) !important;
+  border-radius: var(--radius-lg) !important;
+  box-shadow: var(--shadow-sm) !important;
+
+  mat-card-header {
+    padding: 20px 20px 0 20px;
+
+    .mat-mdc-card-title {
+      font-size: 18px;
+      font-weight: 600;
+      color: var(--text-primary);
+    }
+  }
+
+  mat-card-content {
+    padding: 24px !important;
+
+    form {
+      display: flex;
+      flex-direction: column;
+      gap: 20px;
+
+      mat-form-field {
+        width: 100%;
+
+        ::ng-deep .mat-mdc-text-field-wrapper {
+          background: var(--bg-secondary);
+          border-radius: var(--radius-md);
+        }
+      }
+
+      .form-actions {
+        display: flex;
+        justify-content: flex-end;
+        gap: 12px;
+        margin-top: 8px;
+        padding-top: 20px;
+        border-top: 1px solid var(--border-light);
+
+        button {
+          min-width: 120px;
+          padding: 10px 24px;
+          font-size: 14px;
+          font-weight: 500;
+
+          &.mat-mdc-raised-button {
+            background: var(--primary) !important;
+            color: white !important;
+
+            &:hover {
+              background: #2563eb !important;
+            }
+
+            &:disabled {
+              background: var(--neutral-300) !important;
+              color: var(--neutral-500) !important;
+            }
+          }
+
+          &.mat-mdc-button {
+            color: var(--text-secondary);
+
+            &:hover {
+              background: var(--bg-secondary);
+            }
+          }
+        }
+      }
+    }
+  }
+}
+
+// Responsive design
+@media (max-width: 640px) {
+  .form-card mat-card-content form {
+    .form-actions {
+      flex-direction: column-reverse;
+
+      button {
+        width: 100%;
+      }
+    }
+  }
+}

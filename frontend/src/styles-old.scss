@@ -1,0 +1,606 @@
+/* Personal Finance 360 - Professional Black & White Theme */
+@import '@angular/material/prebuilt-themes/indigo-pink.css';
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&family=DM+Sans:wght@400;500;600;700&display=swap');
+
+// ============================================
+// Professional Monochrome Color Palette
+// ============================================
+:root {
+  // Primary Colors - Black & Grays
+  --primary-50: #fafafa;
+  --primary-100: #f5f5f5;
+  --primary-200: #e5e5e5;
+  --primary-300: #d4d4d4;
+  --primary-400: #a3a3a3;
+  --primary-500: #737373;
+  --primary-600: #525252;
+  --primary-700: #404040;
+  --primary-800: #262626;
+  --primary-900: #171717;
+  --primary-950: #0a0a0a;
+  
+  // Accent - Subtle blue-gray for interactive elements
+  --accent-50: #f8fafc;
+  --accent-100: #f1f5f9;
+  --accent-200: #e2e8f0;
+  --accent-300: #cbd5e1;
+  --accent-400: #94a3b8;
+  --accent-500: #64748b;
+  --accent-600: #475569;
+  --accent-700: #334155;
+  --accent-800: #1e293b;
+  --accent-900: #0f172a;
+  
+  // Neutral Colors
+  --neutral-50: #fafafa;
+  --neutral-100: #f5f5f5;
+  --neutral-200: #e5e5e5;
+  --neutral-300: #d4d4d4;
+  --neutral-400: #a3a3a3;
+  --neutral-500: #737373;
+  --neutral-600: #525252;
+  --neutral-700: #404040;
+  --neutral-800: #262626;
+  --neutral-900: #171717;
+  
+  // Semantic Colors - Muted for professional look
+  --success-light: #86efac;
+  --success: #22c55e;
+  --success-dark: #16a34a;
+  
+  --warning-light: #fde047;
+  --warning: #eab308;
+  --warning-dark: #ca8a04;
+  
+  --error-light: #fca5a5;
+  --error: #ef4444;
+  --error-dark: #dc2626;
+  
+  --info-light: #93c5fd;
+  --info: #3b82f6;
+  --info-dark: #2563eb;
+  
+  // Background & Surface - Clean white base
+  --bg-primary: #ffffff;
+  --bg-secondary: #fafafa;
+  --bg-tertiary: #f5f5f5;
+  --surface: #ffffff;
+  --surface-alt: #fafafa;
+  --surface-elevated: #ffffff;
+  
+  // Text Colors - High contrast
+  --text-primary: #0a0a0a;
+  --text-secondary: #525252;
+  --text-tertiary: #737373;
+  --text-muted: #a3a3a3;
+  --text-inverse: #ffffff;
+  
+  // Border Colors
+  --border-light: #e5e5e5;
+  --border-medium: #d4d4d4;
+  --border-dark: #a3a3a3;
+  
+  // No gradients - Solid colors for professional look
+  --gradient-primary: linear-gradient(135deg, #171717 0%, #262626 100%);
+  --gradient-accent: linear-gradient(135deg, #1e293b 0%, #334155 100%);
+  --gradient-success: linear-gradient(135deg, #16a34a 0%, #22c55e 100%);
+  --gradient-ocean: linear-gradient(135deg, #171717 0%, #404040 100%);
+  --gradient-subtle: linear-gradient(135deg, #fafafa 0%, #f5f5f5 100%);
+  
+  // Shadows - Subtle and professional
+  --shadow-xs: 0 1px 2px 0 rgba(0, 0, 0, 0.03);
+  --shadow-sm: 0 1px 3px 0 rgba(0, 0, 0, 0.05), 0 1px 2px -1px rgba(0, 0, 0, 0.05);
+  --shadow-md: 0 4px 6px -1px rgba(0, 0, 0, 0.05), 0 2px 4px -2px rgba(0, 0, 0, 0.05);
+  --shadow-lg: 0 10px 15px -3px rgba(0, 0, 0, 0.05), 0 4px 6px -4px rgba(0, 0, 0, 0.05);
+  --shadow-xl: 0 20px 25px -5px rgba(0, 0, 0, 0.05), 0 8px 10px -6px rgba(0, 0, 0, 0.05);
+  --shadow-2xl: 0 25px 50px -12px rgba(0, 0, 0, 0.15);
+  
+  // Border Radius - Modern and clean
+  --radius-sm: 6px;
+  --radius-md: 8px;
+  --radius-lg: 12px;
+  --radius-xl: 16px;
+  --radius-2xl: 20px;
+  --radius-full: 9999px;
+}
+
+// ============================================
+// Global Styles
+// ============================================
+html, body {
+  height: 100%;
+  margin: 0;
+  padding: 0;
+  font-family: 'Inter', 'DM Sans', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+  background: var(--bg-primary);
+  color: var(--text-primary);
+  font-size: 16px;
+  line-height: 1.6;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+// ============================================
+// Custom Scrollbar - Minimal
+// ============================================
+::-webkit-scrollbar {
+  width: 8px;
+  height: 8px;
+}
+
+::-webkit-scrollbar-track {
+  background: var(--bg-secondary);
+}
+
+::-webkit-scrollbar-thumb {
+  background: var(--neutral-300);
+  border-radius: var(--radius-full);
+  
+  &:hover {
+    background: var(--neutral-400);
+  }
+}
+
+// ============================================
+// Utility Classes
+// ============================================
+.container {
+  max-width: 1400px;
+  margin: 0 auto;
+  padding: 32px;
+}
+
+.page-header {
+  margin-bottom: 32px;
+  padding-bottom: 16px;
+  border-bottom: 1px solid var(--border-light);
+  
+  h1 {
+    font-size: 32px;
+    font-weight: 700;
+    color: var(--text-primary);
+    margin: 0 0 8px 0;
+    letter-spacing: -0.5px;
+  }
+  
+  p {
+    font-size: 15px;
+    color: var(--text-secondary);
+    margin: 0;
+    font-weight: 400;
+  }
+}
+
+// ============================================
+// Card Enhancements - Clean & Minimal
+// ============================================
+.mat-mdc-card {
+  border-radius: var(--radius-lg) !important;
+  box-shadow: var(--shadow-sm) !important;
+  transition: all 0.2s ease;
+  border: 1px solid var(--border-light);
+  background: var(--surface) !important;
+  
+  &:hover {
+    box-shadow: var(--shadow-md) !important;
+    border-color: var(--border-medium);
+  }
+}
+
+.mat-mdc-card-header {
+  padding: 20px 24px 0 24px;
+}
+
+.mat-mdc-card-content {
+  padding: 24px;
+}
+
+// ============================================
+// Button Enhancements - Professional
+// ============================================
+.mat-mdc-button,
+.mat-mdc-raised-button,
+.mat-mdc-flat-button {
+  border-radius: var(--radius-md) !important;
+  text-transform: none !important;
+  font-weight: 600 !important;
+  font-size: 14px !important;
+  letter-spacing: 0 !important;
+  padding: 0 20px !important;
+  transition: all 0.2s ease !important;
+  
+  &:hover {
+    transform: translateY(-1px);
+  }
+}
+
+.mat-mdc-raised-button {
+  background: var(--primary-900) !important;
+  color: var(--text-inverse) !important;
+  box-shadow: var(--shadow-sm) !important;
+  
+  &:hover {
+    background: var(--primary-800) !important;
+    box-shadow: var(--shadow-md) !important;
+  }
+}
+
+.mat-mdc-outlined-button {
+  border-color: var(--border-dark) !important;
+  color: var(--text-primary) !important;
+  
+  &:hover {
+    background: var(--bg-secondary) !important;
+  }
+}
+
+// ============================================
+// Table Enhancements - Clean Data Display
+// ============================================
+.mat-mdc-table {
+  border-radius: var(--radius-lg);
+  overflow: hidden;
+  box-shadow: none;
+  border: 1px solid var(--border-light);
+  background: var(--surface);
+}
+
+.mat-mdc-header-row {
+  background: var(--bg-secondary);
+  
+  .mat-mdc-header-cell {
+    font-weight: 600;
+    color: var(--text-primary);
+    font-size: 12px;
+    letter-spacing: 0.5px;
+    text-transform: uppercase;
+    border-bottom: 1px solid var(--border-light);
+  }
+}
+
+.mat-mdc-row {
+  transition: background 0.15s ease;
+  
+  &:hover {
+    background-color: var(--bg-secondary);
+  }
+  
+  .mat-mdc-cell {
+    border-bottom: 1px solid var(--border-light);
+    color: var(--text-primary);
+  }
+}
+
+// ============================================
+// Form Field Enhancements
+// ============================================
+.mat-mdc-form-field {
+  width: 100%;
+  
+  .mat-mdc-text-field-wrapper {
+    border-radius: var(--radius-md) !important;
+  }
+  
+  .mdc-text-field--outlined .mdc-notched-outline__leading,
+  .mdc-text-field--outlined .mdc-notched-outline__notch,
+  .mdc-text-field--outlined .mdc-notched-outline__trailing {
+    border-color: var(--border-medium) !important;
+  }
+  
+  &:hover .mdc-text-field--outlined .mdc-notched-outline__leading,
+  &:hover .mdc-text-field--outlined .mdc-notched-outline__notch,
+  &:hover .mdc-text-field--outlined .mdc-notched-outline__trailing {
+    border-color: var(--border-dark) !important;
+  }
+}
+
+// ============================================
+// Spacing Utilities
+// ============================================
+.mt-1 { margin-top: 8px; }
+.mt-2 { margin-top: 16px; }
+.mt-3 { margin-top: 24px; }
+.mt-4 { margin-top: 32px; }
+
+.mb-1 { margin-bottom: 8px; }
+.mb-2 { margin-bottom: 16px; }
+.mb-3 { margin-bottom: 24px; }
+.mb-4 { margin-bottom: 32px; }
+
+.p-1 { padding: 8px; }
+.p-2 { padding: 16px; }
+.p-3 { padding: 24px; }
+.p-4 { padding: 32px; }
+
+// ============================================
+// Flexbox Utilities
+// ============================================
+.flex {
+  display: flex;
+}
+
+.flex-column {
+  flex-direction: column;
+}
+
+.flex-wrap {
+  flex-wrap: wrap;
+}
+
+.justify-between {
+  justify-content: space-between;
+}
+
+.justify-center {
+  justify-content: center;
+}
+
+.align-center {
+  align-items: center;
+}
+
+.gap-1 { gap: 8px; }
+.gap-2 { gap: 16px; }
+.gap-3 { gap: 24px; }
+
+// ============================================
+// Grid Utilities
+// ============================================
+.grid {
+  display: grid;
+  gap: 24px;
+}
+
+.grid-2 {
+  grid-template-columns: repeat(2, 1fr);
+}
+
+.grid-3 {
+  grid-template-columns: repeat(3, 1fr);
+}
+
+.grid-4 {
+  grid-template-columns: repeat(4, 1fr);
+}
+
+@media (max-width: 768px) {
+  .grid-2,
+  .grid-3,
+  .grid-4 {
+    grid-template-columns: 1fr;
+  }
+}
+
+// ============================================
+// Text Utilities
+// ============================================
+.text-center {
+  text-align: center;
+}
+
+.text-right {
+  text-align: right;
+}
+
+.text-muted {
+  color: var(--text-secondary);
+}
+
+.text-success {
+  color: var(--success);
+}
+
+.text-warning {
+  color: var(--warning);
+}
+
+.text-error {
+  color: var(--error);
+}
+
+// ============================================
+// Loading State
+// ============================================
+.loading-container {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  min-height: 300px;
+  flex-direction: column;
+  gap: 20px;
+  
+  mat-spinner {
+    --mdc-circular-progress-active-indicator-color: var(--primary-900);
+  }
+}
+
+// ============================================
+// Empty State
+// ============================================
+.empty-state {
+  text-align: center;
+  padding: 64px 32px;
+  color: var(--text-secondary);
+  
+  .mat-icon {
+    font-size: 64px;
+    width: 64px;
+    height: 64px;
+    color: var(--neutral-400);
+    margin-bottom: 24px;
+  }
+  
+  h3 {
+    font-size: 20px;
+    font-weight: 600;
+    margin: 0 0 8px 0;
+    color: var(--text-primary);
+  }
+  
+  p {
+    font-size: 15px;
+    margin: 0 0 24px 0;
+    color: var(--text-secondary);
+  }
+}
+
+// ============================================
+// Chart Container
+// ============================================
+.chart-container {
+  position: relative;
+  height: 350px;
+  padding: 20px;
+  background: var(--surface);
+  border-radius: var(--radius-lg);
+}
+
+// ============================================
+// Snackbar Styling
+// ============================================
+.error-snackbar {
+  --mdc-snackbar-container-color: var(--error);
+  --mdc-snackbar-supporting-text-color: white;
+  --mat-snack-bar-button-color: white;
+}
+
+.success-snackbar {
+  --mdc-snackbar-container-color: var(--success);
+  --mdc-snackbar-supporting-text-color: white;
+  --mat-snack-bar-button-color: white;
+}
+
+// ============================================
+// Stat Card - Professional Finance Style
+// ============================================
+.stat-card {
+  position: relative;
+  overflow: hidden;
+  background: var(--surface);
+  border: 1px solid var(--border-light);
+  border-radius: var(--radius-lg);
+  
+  .stat-value {
+    font-size: 36px;
+    font-weight: 700;
+    color: var(--text-primary);
+    margin: 8px 0;
+    line-height: 1.2;
+    font-family: 'DM Sans', 'Inter', sans-serif;
+  }
+  
+  .stat-label {
+    font-size: 12px;
+    color: var(--text-secondary);
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    font-weight: 600;
+  }
+  
+  .stat-change {
+    font-size: 13px;
+    margin-top: 8px;
+    font-weight: 600;
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+    padding: 4px 10px;
+    border-radius: var(--radius-full);
+    
+    &.positive {
+      color: var(--success-dark);
+      background: rgba(34, 197, 94, 0.1);
+    }
+    
+    &.negative {
+      color: var(--error-dark);
+      background: rgba(239, 68, 68, 0.1);
+    }
+  }
+}
+
+// ============================================
+// Animations - Subtle
+// ============================================
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+    transform: translateY(10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.fade-in {
+  animation: fadeIn 0.3s ease-out;
+}
+
+// ============================================
+// Badge - Minimal
+// ============================================
+.badge {
+  display: inline-flex;
+  align-items: center;
+  padding: 4px 10px;
+  border-radius: var(--radius-full);
+  font-size: 12px;
+  font-weight: 600;
+  
+  &.badge-primary {
+    background: var(--bg-tertiary);
+    color: var(--text-primary);
+  }
+  
+  &.badge-success {
+    background: rgba(34, 197, 94, 0.1);
+    color: var(--success-dark);
+  }
+  
+  &.badge-warning {
+    background: rgba(234, 179, 8, 0.1);
+    color: var(--warning-dark);
+  }
+  
+  &.badge-error {
+    background: rgba(239, 68, 68, 0.1);
+    color: var(--error-dark);
+  }
+}
+
+// ============================================
+// Finance-Specific Styles
+// ============================================
+.currency {
+  font-family: 'DM Sans', 'Inter', monospace;
+  font-weight: 600;
+  
+  &.positive {
+    color: var(--success);
+  }
+  
+  &.negative {
+    color: var(--error);
+  }
+}
+
+.percentage {
+  font-weight: 600;
+  
+  &.positive {
+    color: var(--success);
+    
+    &::before {
+      content: '+';
+    }
+  }
+  
+  &.negative {
+    color: var(--error);
+  }
+}

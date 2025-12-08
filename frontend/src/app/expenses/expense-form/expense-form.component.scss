@@ -1,0 +1,171 @@
+// ============================================
+// Expense Form - Professional Black & White Theme
+// ============================================
+
+.expense-form-container {
+  padding: 0;
+  max-width: 700px;
+  margin: 0 auto;
+
+  mat-card {
+    background: var(--surface) !important;
+    border: 1px solid var(--border-light) !important;
+    border-radius: var(--radius-lg) !important;
+    box-shadow: var(--shadow-sm) !important;
+    overflow: hidden;
+    
+    mat-card-header {
+      margin-bottom: 24px;
+      padding: 24px 24px 0 24px !important;
+
+      .header {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        width: 100%;
+
+        h2 {
+          margin: 0;
+          font-size: 22px;
+          font-weight: 600;
+          color: var(--text-primary);
+        }
+        
+        button {
+          color: var(--text-secondary);
+          
+          &:hover {
+            background: var(--bg-secondary);
+          }
+        }
+      }
+    }
+    
+    mat-card-content {
+      padding: 0 24px 24px 24px !important;
+    }
+  }
+
+  .loading-container {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    padding: 60px;
+    gap: 16px;
+    background: var(--bg-secondary);
+    border-radius: var(--radius-md);
+
+    p {
+      margin: 0;
+      color: var(--text-secondary);
+      font-weight: 500;
+      font-size: 14px;
+    }
+    
+    mat-spinner {
+      --mdc-circular-progress-active-indicator-color: var(--primary-900);
+    }
+  }
+
+  form {
+    display: flex;
+    flex-direction: column;
+    gap: 20px;
+
+    .form-row {
+      display: flex;
+      gap: 20px;
+
+      &.full-width,
+      .full-width {
+        width: 100%;
+      }
+
+      &.two-columns {
+        mat-form-field {
+          flex: 1;
+        }
+      }
+    }
+
+    mat-form-field {
+      ::ng-deep .mat-mdc-text-field-wrapper {
+        background: var(--bg-secondary);
+        border-radius: var(--radius-md);
+      }
+      
+      .option-icon {
+        vertical-align: middle;
+        margin-right: 8px;
+        font-size: 20px;
+        width: 20px;
+        height: 20px;
+        color: var(--text-secondary);
+      }
+    }
+
+    .form-actions {
+      display: flex;
+      justify-content: flex-end;
+      gap: 12px;
+      margin-top: 16px;
+      padding-top: 20px;
+      border-top: 1px solid var(--border-light);
+
+      button {
+        min-width: 120px;
+        padding: 10px 24px;
+        font-size: 14px;
+        font-weight: 500;
+        
+        &.mat-mdc-raised-button {
+          background: var(--primary-900) !important;
+          color: var(--text-inverse) !important;
+          
+          &:hover {
+            background: var(--primary-800) !important;
+          }
+          
+          &:disabled {
+            background: var(--neutral-300) !important;
+            color: var(--neutral-500) !important;
+          }
+        }
+        
+        &.mat-mdc-button {
+          color: var(--text-secondary);
+          
+          &:hover {
+            background: var(--bg-secondary);
+          }
+        }
+        
+        .button-spinner {
+          display: inline-block;
+          margin-right: 8px;
+        }
+      }
+    }
+  }
+
+  // Responsive design
+  @media (max-width: 640px) {
+    .form-row.two-columns {
+      flex-direction: column;
+      gap: 20px;
+
+      mat-form-field {
+        width: 100%;
+      }
+    }
+
+    .form-actions {
+      flex-direction: column-reverse;
+
+      button {
+        width: 100%;
+      }
+    }
+  }
+}

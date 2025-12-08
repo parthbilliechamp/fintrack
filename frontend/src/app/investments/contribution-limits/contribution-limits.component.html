@@ -1,0 +1,77 @@
+<div class="contribution-limits-container">
+  <!-- Page Header -->
+  <div class="page-header">
+    <h2>Contribution Limits</h2>
+    <p class="subtitle">Set and track your contribution limits by account type</p>
+  </div>
+
+  <!-- Back Button -->
+  <div class="back-button-container">
+    <button mat-flat-button class="back-btn" routerLink="/investments">
+      <mat-icon>arrow_back</mat-icon>
+      Back to Investments
+    </button>
+  </div>
+
+  <div class="limits-header">
+    <h3>{{ selectedYear }} Contribution Limits</h3>
+    <mat-form-field appearance="outline">
+      <mat-label>Year</mat-label>
+      <mat-select [(value)]="selectedYear" (selectionChange)="onYearChange($event.value)">
+        <mat-option *ngFor="let year of years" [value]="year">
+          {{ year }}
+        </mat-option>
+      </mat-select>
+    </mat-form-field>
+  </div>
+
+  <mat-card class="limits-table-card">
+    <mat-card-header>
+      <mat-card-title>Contribution Status for {{ selectedYear }}</mat-card-title>
+    </mat-card-header>
+    <mat-card-content>
+      <table class="editable-limits-table">
+        <thead>
+          <tr>
+            <th>Account Type</th>
+            <th>Limit</th>
+            <th>Used</th>
+            <th>Remaining</th>
+            <th>Progress</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr *ngFor="let item of limitRows">
+            <td class="account-type">
+              <mat-icon>{{ getAccountIcon(item.accountType) }}</mat-icon>
+              {{ item.accountType }}
+            </td>
+            <td class="limit-cell">
+              <mat-form-field appearance="outline" class="limit-input">
+                <span matPrefix>$&nbsp;</span>
+                <input matInput type="number" 
+                       [(ngModel)]="item.limit" 
+                       (blur)="onLimitChange(item)"
+                       (keyup.enter)="onLimitChange(item)"
+                       placeholder="0">
+              </mat-form-field>
+            </td>
+            <td class="used-cell">{{ formatCurrency(item.used) }}</td>
+            <td class="remaining-cell" [class.warning]="item.remaining < 0">
+              {{ formatCurrency(item.remaining) }}
+            </td>
+            <td class="progress-cell">
+              <div class="progress-container">
+                <mat-progress-bar mode="determinate" 
+                                [value]="calculateProgress(item.used, item.limit)"
+                                [color]="item.used > item.limit ? 'warn' : 'primary'">
+                </mat-progress-bar>
+                <span class="progress-value">{{ formatPercentage(calculateProgress(item.used, item.limit)) }}</span>
+              </div>
+            </td>
+          </tr>
+        </tbody>
+      </table>
+    </mat-card-content>
+  </mat-card>
+</div>

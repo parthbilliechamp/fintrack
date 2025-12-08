@@ -1,0 +1,67 @@
+<div class="transaction-form-container">
+  <!-- Page Header -->
+  <div class="page-header">
+    <h2>Add Investment Transaction</h2>
+    <p class="subtitle">Record a new contribution to your investment account</p>
+  </div>
+
+  <!-- Back Button -->
+  <div class="back-button-container">
+    <button mat-flat-button class="back-btn" routerLink="/investments">
+      <mat-icon>arrow_back</mat-icon>
+      Back to Investments
+    </button>
+  </div>
+
+  <!-- Form Card -->
+  <mat-card class="form-card">
+    <mat-card-header>
+      <mat-card-title>Transaction Details</mat-card-title>
+    </mat-card-header>
+    <mat-card-content>
+      <form [formGroup]="transactionForm" (ngSubmit)="onSubmit()">
+        <mat-form-field appearance="outline">
+          <mat-label>Account</mat-label>
+          <mat-select formControlName="accountId">
+            <mat-option *ngFor="let account of accounts" [value]="account.id">
+              {{ getAccountDisplay(account) }}
+            </mat-option>
+          </mat-select>
+          <mat-error *ngIf="transactionForm.get('accountId')?.hasError('required')">
+            Account is required
+          </mat-error>
+        </mat-form-field>
+
+        <mat-form-field appearance="outline">
+          <mat-label>Amount</mat-label>
+          <span matPrefix>$&nbsp;</span>
+          <input matInput type="number" formControlName="amount" placeholder="Enter amount">
+          <mat-error *ngIf="transactionForm.get('amount')?.hasError('required')">
+            Amount is required
+          </mat-error>
+          <mat-error *ngIf="transactionForm.get('amount')?.hasError('min')">
+            Amount must be greater than 0
+          </mat-error>
+        </mat-form-field>
+
+        <mat-form-field appearance="outline">
+          <mat-label>Date</mat-label>
+          <input matInput [matDatepicker]="picker" formControlName="date">
+          <mat-datepicker-toggle matIconSuffix [for]="picker"></mat-datepicker-toggle>
+          <mat-datepicker #picker></mat-datepicker>
+          <mat-error *ngIf="transactionForm.get('date')?.hasError('required')">
+            Date is required
+          </mat-error>
+        </mat-form-field>
+
+        <div class="form-actions">
+          <button mat-button type="button" (click)="cancel()">Cancel</button>
+          <button mat-raised-button color="primary" type="submit" 
+                  [disabled]="transactionForm.invalid || loading">
+            {{ loading ? 'Adding...' : 'Add Transaction' }}
+          </button>
+        </div>
+      </form>
+    </mat-card-content>
+  </mat-card>
+</div>

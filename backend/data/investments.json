@@ -1,0 +1,42 @@
+[
+  {
+    "userId": "ddca6da3-998b-4527-a766-c862c699f488",
+    "accountName": "WIS",
+    "accountType": "TFSA",
+    "investedAmount": 32112,
+    "currentValue": 34243,
+    "id": "1763158252035"
+  },
+  {
+    "userId": "1763159475393-mf3n819ha",
+    "accountName": "DFdf",
+    "accountType": "TFSA",
+    "investedAmount": 3243,
+    "currentValue": 23423,
+    "id": "1763159609091-4rfohmvos"
+  },
+  {
+    "userId": "1763159475393-mf3n819ha",
+    "accountName": "qwewqeq",
+    "accountType": "Savings",
+    "investedAmount": 1312312,
+    "currentValue": 12312312,
+    "id": "1763159647058-9hbubtt6l"
+  },
+  {
+    "userId": "1763159475393-mf3n819ha",
+    "accountName": "efds",
+    "accountType": "FHSA",
+    "investedAmount": 12312,
+    "currentValue": 12333,
+    "id": "1763165610492-vmx3vzs33"
+  },
+  {
+    "userId": "1763158560696",
+    "accountName": "WS RRSP",
+    "accountType": "RRSP",
+    "investedAmount": 5323,
+    "currentValue": 5855.3,
+    "id": "1765168014408-j8pwwkw8s"
+  }
+]

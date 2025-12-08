@@ -1,0 +1,249 @@
+.investment-overview {
+  padding: 0;
+  display: grid;
+  gap: 28px;
+  grid-template-columns: repeat(auto-fit, minmax(350px, 1fr));
+  animation: fadeIn 0.5s ease-out;
+
+  .summary-cards {
+    grid-column: 1 / -1;
+    
+    .total-card {
+      background: linear-gradient(135deg, rgba(255, 255, 255, 0.95) 0%, rgba(255, 255, 255, 0.85) 100%);
+      position: relative;
+      overflow: hidden;
+      
+      &::before {
+        content: '';
+        position: absolute;
+        top: 0;
+        left: 0;
+        right: 0;
+        height: 5px;
+        background: var(--gradient-success);
+      }
+      
+      .card-header {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        margin-bottom: 24px;
+
+        h2 {
+          margin: 0;
+          font-size: 1.75rem;
+          font-weight: 700;
+          color: var(--text-primary);
+        }
+
+        mat-icon {
+          font-size: 3rem;
+          width: 3rem;
+          height: 3rem;
+          background: var(--gradient-success);
+          -webkit-background-clip: text;
+          -webkit-text-fill-color: transparent;
+          background-clip: text;
+        }
+      }
+
+      .card-value {
+        font-size: 3.5rem;
+        font-weight: 800;
+        background: var(--gradient-success);
+        -webkit-background-clip: text;
+        -webkit-text-fill-color: transparent;
+        background-clip: text;
+        margin-bottom: 24px;
+        line-height: 1;
+      }
+
+      .card-stats {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        padding: 20px;
+        background: rgba(0, 0, 0, 0.02);
+        border-radius: var(--radius-lg);
+        
+        .invested {
+          color: var(--text-secondary);
+          font-size: 16px;
+          font-weight: 600;
+        }
+
+        .growth {
+          font-weight: 700;
+          font-size: 18px;
+          padding: 8px 16px;
+          border-radius: var(--radius-full);
+          color: var(--error-dark);
+          background: rgba(244, 67, 54, 0.1);
+
+          &.positive {
+            color: var(--success-dark);
+            background: rgba(76, 175, 80, 0.15);
+          }
+        }
+      }
+    }
+  }
+
+  .account-breakdown {
+    .account-list {
+      display: grid;
+      gap: 20px;
+
+      .account-item {
+        padding: 24px;
+        border-radius: var(--radius-lg);
+        background: linear-gradient(135deg, rgba(102, 126, 234, 0.05) 0%, rgba(0, 188, 212, 0.05) 100%);
+        border: 1px solid rgba(102, 126, 234, 0.1);
+        transition: all 0.3s ease;
+        
+        &:hover {
+          transform: translateY(-4px);
+          box-shadow: var(--shadow-lg);
+          border-color: rgba(102, 126, 234, 0.3);
+        }
+
+        .account-header {
+          display: flex;
+          justify-content: space-between;
+          align-items: center;
+          margin-bottom: 16px;
+
+          h3 {
+            margin: 0;
+            color: var(--text-primary);
+            font-weight: 700;
+            font-size: 18px;
+          }
+
+          .account-growth {
+            font-weight: 700;
+            padding: 6px 14px;
+            border-radius: var(--radius-full);
+            font-size: 14px;
+            color: var(--error-dark);
+            background: rgba(244, 67, 54, 0.1);
+
+            &.positive {
+              color: var(--success-dark);
+              background: rgba(76, 175, 80, 0.15);
+            }
+          }
+        }
+
+        .account-values {
+          display: flex;
+          justify-content: space-between;
+          color: var(--text-secondary);
+          font-size: 15px;
+          font-weight: 500;
+          
+          span:last-child {
+            font-weight: 700;
+            background: var(--gradient-ocean);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+          }
+        }
+      }
+    }
+  }
+
+  .contribution-limits {
+    .limit-list {
+      display: grid;
+      gap: 24px;
+
+      .limit-item {
+        padding: 20px;
+        background: rgba(255, 255, 255, 0.5);
+        border-radius: var(--radius-lg);
+        border: 1px solid var(--neutral-200);
+        
+        .limit-header {
+          display: flex;
+          justify-content: space-between;
+          align-items: center;
+          margin-bottom: 16px;
+
+          h3 {
+            margin: 0;
+            color: var(--text-primary);
+            font-weight: 700;
+            font-size: 16px;
+          }
+
+          span {
+            color: var(--primary-700);
+            font-weight: 700;
+            font-size: 15px;
+          }
+        }
+
+        mat-progress-bar {
+          margin: 12px 0;
+          border-radius: var(--radius-full);
+          height: 10px;
+          
+          ::ng-deep .mdc-linear-progress__bar-inner {
+            border-radius: var(--radius-full);
+          }
+        }
+
+        .limit-details {
+          display: flex;
+          justify-content: space-between;
+          color: var(--text-secondary);
+          font-size: 14px;
+          font-weight: 600;
+          
+          span:last-child {
+            background: var(--gradient-accent);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+            font-weight: 700;
+          }
+        }
+      }
+    }
+  }
+
+  .action-buttons {
+    grid-column: 1 / -1;
+    display: flex;
+    gap: 20px;
+    justify-content: center;
+    margin-top: 12px;
+
+    button {
+      padding: 14px 32px;
+      font-size: 15px;
+      
+      mat-icon {
+        margin-right: 10px;
+      }
+    }
+  }
+}
+
+// Responsive adjustments
+@media (max-width: 768px) {
+  .investment-overview {
+    grid-template-columns: 1fr;
+    gap: 20px;
+    
+    .action-buttons {
+      flex-direction: column;
+      
+      button {
+        width: 100%;
+      }
+    }
+  }
+}

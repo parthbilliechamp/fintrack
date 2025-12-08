@@ -1,0 +1,235 @@
+// ============================================
+// Contribution Limits - Professional Theme
+// ============================================
+
+.page-header {
+  margin-bottom: 24px;
+
+  h2 {
+    margin: 0 0 4px 0;
+    font-size: 24px;
+    font-weight: 600;
+    color: var(--text-primary);
+  }
+
+  .subtitle {
+    margin: 0;
+    font-size: 14px;
+    color: var(--text-secondary);
+  }
+}
+
+.back-button-container {
+  margin-bottom: 24px;
+
+  .back-btn {
+    background: var(--primary) !important;
+    color: white !important;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+
+    mat-icon {
+      font-size: 18px;
+      width: 18px;
+      height: 18px;
+    }
+
+    &:hover {
+      background: #2563eb !important;
+    }
+  }
+}
+
+.contribution-limits-container {
+  padding: 0;
+  max-width: 1000px;
+
+  .limits-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 24px;
+
+    h3 {
+      margin: 0;
+      font-size: 18px;
+      font-weight: 600;
+      color: var(--text-primary);
+    }
+
+    mat-form-field {
+      width: 120px;
+    }
+  }
+
+  .limits-table-card {
+    background: var(--surface) !important;
+    border: 1px solid var(--border-light) !important;
+    border-radius: var(--radius-lg) !important;
+    box-shadow: var(--shadow-sm) !important;
+    overflow: hidden;
+
+    mat-card-header {
+      padding: 20px 20px 0 20px;
+
+      .mat-mdc-card-title {
+        font-size: 16px;
+        font-weight: 600;
+        color: var(--text-primary);
+      }
+    }
+
+    mat-card-content {
+      padding: 20px !important;
+    }
+  }
+}
+
+// Editable Limits Table
+.editable-limits-table {
+  width: 100%;
+  border-collapse: collapse;
+
+  thead {
+    tr {
+      th {
+        padding: 12px 16px;
+        text-align: left;
+        font-size: 12px;
+        font-weight: 600;
+        text-transform: uppercase;
+        letter-spacing: 0.5px;
+        color: var(--text-secondary);
+        background: var(--bg-secondary);
+        border-bottom: 1px solid var(--border-light);
+
+        &:not(:first-child) {
+          text-align: right;
+        }
+      }
+    }
+  }
+
+  tbody {
+    tr {
+      &:hover {
+        background: var(--bg-secondary);
+      }
+
+      td {
+        padding: 16px;
+        font-size: 14px;
+        color: var(--text-primary);
+        border-bottom: 1px solid var(--border-light);
+        vertical-align: middle;
+
+        &.account-type {
+          display: flex;
+          align-items: center;
+          gap: 12px;
+          font-weight: 600;
+
+          mat-icon {
+            color: var(--primary);
+            font-size: 24px;
+            width: 24px;
+            height: 24px;
+          }
+        }
+
+        &.limit-cell {
+          .limit-input {
+            width: 140px;
+
+            ::ng-deep {
+              .mat-mdc-text-field-wrapper {
+                background: var(--surface);
+                border-radius: var(--radius-md);
+                padding: 0 12px;
+              }
+
+              .mat-mdc-form-field-infix {
+                padding: 8px 0;
+                min-height: 40px;
+              }
+
+              input {
+                font-weight: 600;
+                font-size: 14px;
+              }
+            }
+          }
+        }
+
+        &.used-cell {
+          text-align: right;
+          font-weight: 500;
+        }
+
+        &.remaining-cell {
+          text-align: right;
+          font-weight: 600;
+          color: var(--success);
+
+          &.warning {
+            color: var(--error);
+          }
+        }
+
+        &.progress-cell {
+          .progress-container {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            min-width: 150px;
+
+            mat-progress-bar {
+              flex: 1;
+              border-radius: var(--radius-full);
+              height: 8px;
+
+              ::ng-deep .mdc-linear-progress__buffer-bar {
+                background: var(--bg-secondary);
+              }
+
+              ::ng-deep .mdc-linear-progress__bar-inner {
+                border-color: var(--primary);
+              }
+            }
+
+            .progress-value {
+              min-width: 48px;
+              text-align: right;
+              font-weight: 500;
+              font-size: 13px;
+              color: var(--text-secondary);
+            }
+          }
+        }
+      }
+
+      &:last-child td {
+        border-bottom: none;
+      }
+    }
+  }
+}
+
+// Responsive design
+@media (max-width: 768px) {
+  .editable-limits-table {
+    thead tr th,
+    tbody tr td {
+      padding: 12px 8px;
+    }
+
+    td.limit-cell .limit-input {
+      width: 100px;
+    }
+
+    td.progress-cell .progress-container {
+      min-width: 100px;
+    }
+  }
+}
