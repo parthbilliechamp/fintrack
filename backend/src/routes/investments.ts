@@ -1,5 +1,6 @@
 import { Router, Request, Response } from 'express';
 import { readData, appendData, updateData, deleteData } from '../storage';
+import logger from '../logger';
 
 const router = Router();
 
@@ -34,10 +35,13 @@ interface InvestmentTransaction {
 router.get('/:userId', (req: Request, res: Response) => {
   try {
     const { userId } = req.params;
+    logger.debug('Fetching investments', { userId });
     const investments = readData('investments') as Investment[];
     const userInvestments = investments.filter((i: Investment) => i.userId === userId);
+    logger.info('Investments fetched', { userId, count: userInvestments.length });
     res.status(200).json(userInvestments);
   } catch (error) {
+    logger.error('Failed to fetch investments', { error: (error as Error).message });
     res.status(500).json({ error: 'Failed to fetch investments' });
   }
 });
@@ -46,16 +50,20 @@ router.get('/:userId', (req: Request, res: Response) => {
 router.get('/:userId/:id', (req: Request, res: Response) => {
   try {
     const { userId, id } = req.params;
+    logger.debug('Fetching investment by id', { userId, investmentId: id });
     const investments = readData('investments') as Investment[];
     const investment = investments.find((i: Investment) => i.id === id && i.userId === userId);
 
     if (!investment) {
+      logger.warn('Investment not found', { userId, investmentId: id });
       res.status(404).json({ error: 'Investment not found' });
       return;
     }
 
+    logger.debug('Investment retrieved', { userId, investmentId: id });
     res.status(200).json(investment);
   } catch (error) {
+    logger.error('Failed to fetch investment', { error: (error as Error).message });
     res.status(500).json({ error: 'Failed to fetch investment' });
   }
 });
@@ -65,9 +73,11 @@ router.post('/:userId', (req: Request, res: Response) => {
   try {
     const { userId } = req.params;
     const { accountName, accountType, investedAmount, currentValue } = req.body;
+    logger.debug('Creating investment', { userId, accountType, accountName });
 
     // Validation
     if (!accountName || !accountType || investedAmount === undefined || currentValue === undefined) {
+      logger.warn('Create investment failed: missing fields', { userId });
       res.status(400).json({ error: 'Missing required fields' });
       return;
     }
@@ -103,9 +113,10 @@ router.post('/:userId', (req: Request, res: Response) => {
       currentValue
     });
 
+    logger.info('Investment created', { userId, investmentId: newInvestment.id, accountType });
     res.status(201).json(newInvestment);
   } catch (error) {
-    console.error('Error creating investment:', error);
+    logger.error('Failed to create investment', { error: (error as Error).message });
     res.status(500).json({ error: 'Failed to create investment' });
   }
 });
@@ -115,10 +126,12 @@ router.put('/:userId/:id', (req: Request, res: Response) => {
   try {
     const { userId, id } = req.params;
     const { accountName, accountType, investedAmount, currentValue } = req.body;
+    logger.debug('Updating investment', { userId, investmentId: id });
 
     // Validation
     const VALID_ACCOUNT_TYPES = ['RRSP', 'TFSA', 'FHSA', 'Savings'];
     if (!accountName || !accountType || investedAmount === undefined || currentValue === undefined) {
+      logger.warn('Update investment failed: missing fields', { userId, investmentId: id });
       res.status(400).json({ error: 'Missing required fields' });
       return;
     }
@@ -155,9 +168,10 @@ router.put('/:userId/:id', (req: Request, res: Response) => {
       currentValue
     });
 
+    logger.info('Investment updated', { userId, investmentId: id });
     res.status(200).json(updatedInvestment);
   } catch (error) {
-    console.error('Error updating investment:', error);
+    logger.error('Failed to update investment', { error: (error as Error).message });
     res.status(500).json({ error: 'Failed to update investment' });
   }
 });
@@ -166,18 +180,22 @@ router.put('/:userId/:id', (req: Request, res: Response) => {
 router.delete('/:userId/:id', (req: Request, res: Response) => {
   try {
     const { userId, id } = req.params;
+    logger.debug('Deleting investment', { userId, investmentId: id });
 
     const investments = readData('investments') as Investment[];
     const investment = investments.find((i: Investment) => i.id === id && i.userId === userId);
 
     if (!investment) {
+      logger.warn('Delete investment failed: not found', { userId, investmentId: id });
       res.status(404).json({ error: 'Investment not found' });
       return;
     }
 
     deleteData('investments', id);
+    logger.info('Investment deleted', { userId, investmentId: id });
     res.status(200).json({ message: 'Investment deleted successfully' });
   } catch (error) {
+    logger.error('Failed to delete investment', { error: (error as Error).message });
     res.status(500).json({ error: 'Failed to delete investment' });
   }
 });
@@ -188,10 +206,13 @@ router.delete('/:userId/:id', (req: Request, res: Response) => {
 router.get('/:userId/limits/all', (req: Request, res: Response) => {
   try {
     const { userId } = req.params;
+    logger.debug('Fetching contribution limits', { userId });
     const limits = readData('contributionLimits') as ContributionLimit[];
     const userLimits = limits.filter((l: ContributionLimit) => l.userId === userId);
+    logger.info('Contribution limits fetched', { userId, count: userLimits.length });
     res.status(200).json(userLimits);
   } catch (error) {
+    logger.error('Failed to fetch contribution limits', { error: (error as Error).message });
     res.status(500).json({ error: 'Failed to fetch contribution limits' });
   }
 });
@@ -228,9 +249,10 @@ router.post('/:userId/limits', (req: Request, res: Response) => {
       limit
     });
 
+    logger.info('Contribution limit created', { userId, limitId: newLimit.id, year, accountType });
     res.status(201).json(newLimit);
   } catch (error) {
-    console.error('Error creating contribution limit:', error);
+    logger.error('Failed to create contribution limit', { error: (error as Error).message });
     res.status(500).json({ error: 'Failed to create contribution limit' });
   }
 });
@@ -275,9 +297,10 @@ router.put('/:userId/limits/:id', (req: Request, res: Response) => {
       limit
     });
 
+    logger.info('Contribution limit updated', { userId, limitId: id });
     res.status(200).json(updatedLimit);
   } catch (error) {
-    console.error('Error updating contribution limit:', error);
+    logger.error('Failed to update contribution limit', { error: (error as Error).message });
     res.status(500).json({ error: 'Failed to update contribution limit' });
   }
 });
@@ -286,18 +309,22 @@ router.put('/:userId/limits/:id', (req: Request, res: Response) => {
 router.delete('/:userId/limits/:id', (req: Request, res: Response) => {
   try {
     const { userId, id } = req.params;
+    logger.debug('Deleting contribution limit', { userId, limitId: id });
 
     const limits = readData('contributionLimits') as ContributionLimit[];
     const existing = limits.find((l: ContributionLimit) => l.id === id && l.userId === userId);
 
     if (!existing) {
+      logger.warn('Delete contribution limit failed: not found', { userId, limitId: id });
       res.status(404).json({ error: 'Contribution limit not found' });
       return;
     }
 
     deleteData('contributionLimits', id);
+    logger.info('Contribution limit deleted', { userId, limitId: id });
     res.status(200).json({ message: 'Contribution limit deleted successfully' });
   } catch (error) {
+    logger.error('Failed to delete contribution limit', { error: (error as Error).message });
     res.status(500).json({ error: 'Failed to delete contribution limit' });
   }
 });
@@ -308,10 +335,13 @@ router.delete('/:userId/limits/:id', (req: Request, res: Response) => {
 router.get('/:userId/transactions/all', (req: Request, res: Response) => {
   try {
     const { userId } = req.params;
+    logger.debug('Fetching transactions', { userId });
     const transactions = readData('investmentTransactions') as InvestmentTransaction[];
     const userTransactions = transactions.filter((t: InvestmentTransaction) => t.userId === userId);
+    logger.info('Transactions fetched', { userId, count: userTransactions.length });
     res.status(200).json(userTransactions);
   } catch (error) {
+    logger.error('Failed to fetch transactions', { error: (error as Error).message });
     res.status(500).json({ error: 'Failed to fetch transactions' });
   }
 });
@@ -321,9 +351,11 @@ router.post('/:userId/transactions', (req: Request, res: Response) => {
   try {
     const { userId } = req.params;
     const { amount, date, accountId } = req.body;
+    logger.debug('Creating transaction', { userId, accountId, amount });
 
     // Validation
     if (!amount || !date || !accountId) {
+      logger.warn('Create transaction failed: missing fields', { userId });
       res.status(400).json({ error: 'Missing required fields' });
       return;
     }
@@ -366,7 +398,7 @@ router.post('/:userId/transactions', (req: Request, res: Response) => {
     const currentInvestment = currentInvestments.find((i: Investment) => i.id === accountId && i.userId === userId);
     
     if (!currentInvestment) {
-      console.error('Investment not found after transaction creation');
+      logger.error('Investment not found after transaction creation', { userId, accountId });
       res.status(201).json({
         transaction: newTransaction,
         updatedInvestment: null
@@ -384,7 +416,7 @@ router.post('/:userId/transactions', (req: Request, res: Response) => {
     const newInvestedAmount = currentInvestment.investedAmount + amount;
     const newCurrentValue = newInvestedAmount * (1 + growthPercentage);
     
-    console.log('Updating investment:', {
+    logger.debug('Updating investment after transaction', {
       accountId,
       oldInvested: currentInvestment.investedAmount,
       oldCurrent: currentInvestment.currentValue,
@@ -400,7 +432,7 @@ router.post('/:userId/transactions', (req: Request, res: Response) => {
         currentValue: newCurrentValue
       });
       
-      console.log('Investment updated successfully:', updatedInvestment);
+      logger.info('Transaction created and investment updated', { userId, transactionId: newTransaction.id, accountId });
 
       // Return both the transaction and updated investment
       res.status(201).json({
@@ -408,14 +440,14 @@ router.post('/:userId/transactions', (req: Request, res: Response) => {
         updatedInvestment: updatedInvestment
       });
     } catch (updateError) {
-      console.error('Error updating investment:', updateError);
+      logger.error('Error updating investment after transaction', { error: (updateError as Error).message });
       res.status(201).json({
         transaction: newTransaction,
         updatedInvestment: null
       });
     }
   } catch (error) {
-    console.error('Error creating transaction:', error);
+    logger.error('Failed to create transaction', { error: (error as Error).message });
     res.status(500).json({ error: 'Failed to create transaction' });
   }
 });
@@ -424,18 +456,22 @@ router.post('/:userId/transactions', (req: Request, res: Response) => {
 router.delete('/:userId/transactions/:id', (req: Request, res: Response) => {
   try {
     const { userId, id } = req.params;
+    logger.debug('Deleting transaction', { userId, transactionId: id });
 
     const transactions = readData('investmentTransactions') as InvestmentTransaction[];
     const transaction = transactions.find((t: InvestmentTransaction) => t.id === id && t.userId === userId);
 
     if (!transaction) {
+      logger.warn('Delete transaction failed: not found', { userId, transactionId: id });
       res.status(404).json({ error: 'Transaction not found' });
       return;
     }
 
     deleteData('investmentTransactions', id);
+    logger.info('Transaction deleted', { userId, transactionId: id });
     res.status(200).json({ message: 'Transaction deleted successfully' });
   } catch (error) {
+    logger.error('Failed to delete transaction', { error: (error as Error).message });
     res.status(500).json({ error: 'Failed to delete transaction' });
   }
 });
@@ -489,9 +525,10 @@ router.get('/:userId/limits/status', (req: Request, res: Response) => {
       };
     });
 
+    logger.debug('Contribution status retrieved', { userId, year, accountTypes: result.length });
     res.status(200).json(result);
   } catch (error) {
-    console.error('Error fetching contribution status:', error);
+    logger.error('Failed to fetch contribution status', { error: (error as Error).message });
     res.status(500).json({ error: 'Failed to fetch contribution status' });
   }
 });
@@ -532,9 +569,10 @@ router.get('/:userId/aggregates/by-account-type', (req: Request, res: Response) 
     });
 
     const result = Object.values(accountTypeData);
+    logger.debug('Investment aggregates by account type retrieved', { userId, count: result.length });
     res.status(200).json(result);
   } catch (error) {
-    console.error('Error getting investment aggregates by account type:', error);
+    logger.error('Failed to get investment aggregates by account type', { error: (error as Error).message });
     res.status(500).json({ error: 'Failed to get investment aggregates' });
   }
 });
@@ -562,6 +600,7 @@ router.get('/:userId/summary', (req: Request, res: Response) => {
       byAccountType[investment.accountType].value += investment.currentValue;
     });
 
+    logger.debug('Investment summary retrieved', { userId, totalInvested, totalValue, count });
     res.status(200).json({
       totalInvested,
       totalValue,
@@ -571,7 +610,7 @@ router.get('/:userId/summary', (req: Request, res: Response) => {
       byAccountType
     });
   } catch (error) {
-    console.error('Error getting investment summary:', error);
+    logger.error('Failed to get investment summary', { error: (error as Error).message });
     res.status(500).json({ error: 'Failed to get investment summary' });
   }
 });

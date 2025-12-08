@@ -9,6 +9,7 @@ import {
 import { Observable, throwError } from 'rxjs';
 import { catchError } from 'rxjs/operators';
 import { MatSnackBar } from '@angular/material/snack-bar';
+import { environment } from '../../../environments/environment';
 
 @Injectable()
 export class ErrorInterceptor implements HttpInterceptor {
@@ -28,7 +29,7 @@ export class ErrorInterceptor implements HttpInterceptor {
         } else {
           // Server-side error
           if (error.status === 0) {
-            errorMessage = 'Unable to connect to server. Please check if the backend is running on http://localhost:3000';
+            errorMessage = `Unable to connect to server. Please check if the backend is running on ${environment.apiUrl}`;
           } else if (error.status === 404) {
             errorMessage = error.error?.error || 'Resource not found';
           } else if (error.status === 400) {

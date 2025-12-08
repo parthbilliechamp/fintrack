@@ -10,12 +10,15 @@ import {
   ExpenseCategory 
 } from '../interfaces/expense.interface';
 import { AuthService } from './auth.service';
+import { LoggerService, ContextLogger } from './logger.service';
+import { environment } from '../../../environments/environment';
 
 @Injectable({
   providedIn: 'root'
 })
 export class ExpenseService {
-  private readonly API_URL = 'http://localhost:3000/api/expenses';
+  private readonly API_URL = `${environment.apiUrl}/expenses`;
+  private logger: ContextLogger;
   
   // Use BehaviorSubject for reactive state management
   private expensesSubject = new BehaviorSubject<Expense[]>([]);
@@ -23,13 +26,18 @@ export class ExpenseService {
 
   constructor(
     private http: HttpClient,
-    private authService: AuthService
+    private authService: AuthService,
+    private loggerService: LoggerService
   ) {
+    this.logger = this.loggerService.createContextLogger('ExpenseService');
+    
     // Load expenses when user logs in
     this.authService.currentUser$.subscribe(user => {
       if (user) {
+        this.logger.debug('User logged in, loading expenses', { userId: user.id });
         this.loadExpenses();
       } else {
+        this.logger.debug('User logged out, clearing expenses');
         this.expensesSubject.next([]);
       }
     });
@@ -42,10 +50,14 @@ export class ExpenseService {
     const user = this.authService.getCurrentUser();
     if (!user) return;
 
+    this.logger.debug('Loading expenses from server');
     this.http.get<Expense[]>(`${this.API_URL}/${user.id}`).pipe(
-      tap(expenses => this.expensesSubject.next(expenses)),
+      tap(expenses => {
+        this.logger.info('Expenses loaded successfully', { count: expenses.length });
+        this.expensesSubject.next(expenses);
+      }),
       catchError(error => {
-        console.error('Failed to load expenses:', error);
+        this.logger.error('Failed to load expenses', error);
         this.expensesSubject.next([]);
         return of([]);
       })
@@ -89,9 +101,11 @@ export class ExpenseService {
   public addExpense(expenseData: ExpenseFormData): Observable<Expense> {
     const user = this.authService.getCurrentUser();
     if (!user) {
+      this.logger.error('Cannot add expense: user not authenticated');
       throw new Error('User not authenticated');
     }
 
+    this.logger.debug('Adding new expense', { category: expenseData.category, amount: expenseData.amount });
     const payload = {
       ...expenseData,
       date: expenseData.date.toISOString()
@@ -99,11 +113,12 @@ export class ExpenseService {
 
     return this.http.post<Expense>(`${this.API_URL}/${user.id}`, payload).pipe(
       tap(newExpense => {
+        this.logger.info('Expense added successfully', { expenseId: newExpense.id });
         const current = this.expensesSubject.value;
         this.expensesSubject.next([...current, newExpense]);
       }),
       catchError(error => {
-        console.error('Failed to add expense:', error);
+        this.logger.error('Failed to add expense', error);
         throw error;
       })
     );
@@ -115,9 +130,11 @@ export class ExpenseService {
   public updateExpense(id: string, expenseData: ExpenseFormData): Observable<Expense> {
     const user = this.authService.getCurrentUser();
     if (!user) {
+      this.logger.error('Cannot update expense: user not authenticated');
       throw new Error('User not authenticated');
     }
 
+    this.logger.debug('Updating expense', { expenseId: id });
     const payload = {
       ...expenseData,
       date: expenseData.date.toISOString()
@@ -125,6 +142,7 @@ export class ExpenseService {
 
     return this.http.put<Expense>(`${this.API_URL}/${user.id}/${id}`, payload).pipe(
       tap(updatedExpense => {
+        this.logger.info('Expense updated successfully', { expenseId: id });
         const current = this.expensesSubject.value;
         const index = current.findIndex(e => e.id === id);
         if (index !== -1) {
@@ -133,7 +151,7 @@ export class ExpenseService {
         }
       }),
       catchError(error => {
-        console.error('Failed to update expense:', error);
+        this.logger.error('Failed to update expense', { expenseId: id, error });
         throw error;
       })
     );
@@ -145,16 +163,19 @@ export class ExpenseService {
   public deleteExpense(id: string): Observable<void> {
     const user = this.authService.getCurrentUser();
     if (!user) {
+      this.logger.error('Cannot delete expense: user not authenticated');
       throw new Error('User not authenticated');
     }
 
+    this.logger.debug('Deleting expense', { expenseId: id });
     return this.http.delete<void>(`${this.API_URL}/${user.id}/${id}`).pipe(
       tap(() => {
+        this.logger.info('Expense deleted successfully', { expenseId: id });
         const current = this.expensesSubject.value;
         this.expensesSubject.next(current.filter(e => e.id !== id));
       }),
       catchError(error => {
-        console.error('Failed to delete expense:', error);
+        this.logger.error('Failed to delete expense', { expenseId: id, error });
         throw error;
       })
     );
@@ -166,6 +187,7 @@ export class ExpenseService {
   public getMonthlyAggregates(year?: number, month?: number): Observable<MonthlyAggregate[]> {
     const user = this.authService.getCurrentUser();
     if (!user) {
+      this.logger.error('Cannot get monthly aggregates: user not authenticated');
       throw new Error('User not authenticated');
     }
 
@@ -175,9 +197,11 @@ export class ExpenseService {
     if (month !== undefined) params.push(`month=${month}`);
     if (params.length > 0) url += `?${params.join('&')}`;
 
+    this.logger.debug('Fetching monthly aggregates', { year, month });
     return this.http.get<MonthlyAggregate[]>(url).pipe(
+      tap(data => this.logger.debug('Monthly aggregates received', { count: data.length })),
       catchError(error => {
-        console.error('Failed to get monthly aggregates:', error);
+        this.logger.error('Failed to get monthly aggregates', error);
         return of([]);
       })
     );
@@ -189,6 +213,7 @@ export class ExpenseService {
   public getCategoryAggregates(year?: number, month?: number): Observable<CategoryAggregate[]> {
     const user = this.authService.getCurrentUser();
     if (!user) {
+      this.logger.error('Cannot get category aggregates: user not authenticated');
       throw new Error('User not authenticated');
     }
 
@@ -198,9 +223,11 @@ export class ExpenseService {
     if (month !== undefined) params.push(`month=${month}`);
     if (params.length > 0) url += `?${params.join('&')}`;
 
+    this.logger.debug('Fetching category aggregates', { year, month });
     return this.http.get<CategoryAggregate[]>(url).pipe(
+      tap(data => this.logger.debug('Category aggregates received', { count: data.length })),
       catchError(error => {
-        console.error('Failed to get category aggregates:', error);
+        this.logger.error('Failed to get category aggregates', error);
         return of([]);
       })
     );
@@ -212,6 +239,7 @@ export class ExpenseService {
   public getExpenseSummary(year?: number, month?: number): Observable<ExpenseSummary> {
     const user = this.authService.getCurrentUser();
     if (!user) {
+      this.logger.error('Cannot get expense summary: user not authenticated');
       throw new Error('User not authenticated');
     }
 
@@ -221,9 +249,11 @@ export class ExpenseService {
     if (month !== undefined) params.push(`month=${month}`);
     if (params.length > 0) url += `?${params.join('&')}`;
 
+    this.logger.debug('Fetching expense summary', { year, month });
     return this.http.get<ExpenseSummary>(url).pipe(
+      tap(data => this.logger.debug('Expense summary received', { total: data.total, count: data.count })),
       catchError(error => {
-        console.error('Failed to get expense summary:', error);
+        this.logger.error('Failed to get expense summary', error);
         return of({
           total: 0,
           count: 0,

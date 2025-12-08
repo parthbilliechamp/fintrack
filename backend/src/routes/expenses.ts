@@ -1,5 +1,6 @@
 import { Router, Request, Response } from 'express';
 import { readData, appendData, updateData, deleteData } from '../storage';
+import logger from '../logger';
 
 const router = Router();
 
@@ -51,9 +52,10 @@ router.get('/:userId/aggregates/monthly', (req: Request, res: Response) => {
     });
 
     const result = Object.values(monthlyData).sort((a, b) => a.month.localeCompare(b.month));
+    logger.debug('Monthly aggregates retrieved', { userId, count: result.length });
     res.status(200).json(result);
   } catch (error) {
-    console.error('Error getting monthly aggregates:', error);
+    logger.error('Error getting monthly aggregates', { error: (error as Error).message });
     res.status(500).json({ error: 'Failed to get monthly aggregates' });
   }
 });
@@ -94,9 +96,10 @@ router.get('/:userId/aggregates/category', (req: Request, res: Response) => {
     });
 
     const result = Object.values(categoryData);
+    logger.debug('Category aggregates retrieved', { userId, count: result.length });
     res.status(200).json(result);
   } catch (error) {
-    console.error('Error getting category aggregates:', error);
+    logger.error('Error getting category aggregates', { error: (error as Error).message });
     res.status(500).json({ error: 'Failed to get category aggregates' });
   }
 });
@@ -130,6 +133,7 @@ router.get('/:userId/summary', (req: Request, res: Response) => {
       byCategory[expense.category] = (byCategory[expense.category] || 0) + expense.amount;
     });
 
+    logger.debug('Expense summary retrieved', { userId, total, count });
     res.status(200).json({
       total,
       count,
@@ -137,7 +141,7 @@ router.get('/:userId/summary', (req: Request, res: Response) => {
       byCategory
     });
   } catch (error) {
-    console.error('Error getting expense summary:', error);
+    logger.error('Error getting expense summary', { error: (error as Error).message });
     res.status(500).json({ error: 'Failed to get expense summary' });
   }
 });
@@ -146,10 +150,13 @@ router.get('/:userId/summary', (req: Request, res: Response) => {
 router.get('/:userId', (req: Request, res: Response) => {
   try {
     const { userId } = req.params;
+    logger.debug('Fetching expenses', { userId });
     const expenses = readData('expenses') as Expense[];
     const userExpenses = expenses.filter((e: Expense) => e.userId === userId);
+    logger.info('Expenses fetched', { userId, count: userExpenses.length });
     res.status(200).json(userExpenses);
   } catch (error) {
+    logger.error('Failed to fetch expenses', { error: (error as Error).message });
     res.status(500).json({ error: 'Failed to fetch expenses' });
   }
 });
@@ -158,16 +165,20 @@ router.get('/:userId', (req: Request, res: Response) => {
 router.get('/:userId/:id', (req: Request, res: Response) => {
   try {
     const { userId, id } = req.params;
+    logger.debug('Fetching expense by id', { userId, expenseId: id });
     const expenses = readData('expenses') as Expense[];
     const expense = expenses.find((e: Expense) => e.id === id && e.userId === userId);
 
     if (!expense) {
+      logger.warn('Expense not found', { userId, expenseId: id });
       res.status(404).json({ error: 'Expense not found' });
       return;
     }
 
+    logger.debug('Expense retrieved', { userId, expenseId: id });
     res.status(200).json(expense);
   } catch (error) {
+    logger.error('Failed to fetch expense', { error: (error as Error).message });
     res.status(500).json({ error: 'Failed to fetch expense' });
   }
 });
@@ -177,9 +188,11 @@ router.post('/:userId', (req: Request, res: Response) => {
   try {
     const { userId } = req.params;
     const { category, details, date, amount } = req.body;
+    logger.debug('Creating expense', { userId, category, amount });
 
     // Validation
     if (!category || !details || !date || amount === undefined) {
+      logger.warn('Create expense failed: missing fields', { userId });
       res.status(400).json({ error: 'Missing required fields' });
       return;
     }
@@ -217,9 +230,10 @@ router.post('/:userId', (req: Request, res: Response) => {
       amount
     });
 
+    logger.info('Expense created', { userId, expenseId: newExpense.id, category, amount });
     res.status(201).json(newExpense);
   } catch (error) {
-    console.error('Error creating expense:', error);
+    logger.error('Failed to create expense', { error: (error as Error).message });
     res.status(500).json({ error: 'Failed to create expense' });
   }
 });
@@ -229,9 +243,11 @@ router.put('/:userId/:id', (req: Request, res: Response) => {
   try {
     const { userId, id } = req.params;
     const { category, details, date, amount } = req.body;
+    logger.debug('Updating expense', { userId, expenseId: id });
 
     // Validation
     if (!category || !details || !date || amount === undefined) {
+      logger.warn('Update expense failed: missing fields', { userId, expenseId: id });
       res.status(400).json({ error: 'Missing required fields' });
       return;
     }
@@ -265,6 +281,7 @@ router.put('/:userId/:id', (req: Request, res: Response) => {
     const expense = expenses.find((e: Expense) => e.id === id && e.userId === userId);
 
     if (!expense) {
+      logger.warn('Update expense failed: not found', { userId, expenseId: id });
       res.status(404).json({ error: 'Expense not found' });
       return;
     }
@@ -277,9 +294,10 @@ router.put('/:userId/:id', (req: Request, res: Response) => {
       amount
     });
 
+    logger.info('Expense updated', { userId, expenseId: id });
     res.status(200).json(updatedExpense);
   } catch (error) {
-    console.error('Error updating expense:', error);
+    logger.error('Failed to update expense', { error: (error as Error).message });
     res.status(500).json({ error: 'Failed to update expense' });
   }
 });
@@ -288,18 +306,22 @@ router.put('/:userId/:id', (req: Request, res: Response) => {
 router.delete('/:userId/:id', (req: Request, res: Response) => {
   try {
     const { userId, id } = req.params;
+    logger.debug('Deleting expense', { userId, expenseId: id });
 
     const expenses = readData('expenses') as Expense[];
     const expense = expenses.find((e: Expense) => e.id === id && e.userId === userId);
 
     if (!expense) {
+      logger.warn('Delete expense failed: not found', { userId, expenseId: id });
       res.status(404).json({ error: 'Expense not found' });
       return;
     }
 
     deleteData('expenses', id);
+    logger.info('Expense deleted', { userId, expenseId: id });
     res.status(200).json({ message: 'Expense deleted successfully' });
   } catch (error) {
+    logger.error('Failed to delete expense', { error: (error as Error).message });
     res.status(500).json({ error: 'Failed to delete expense' });
   }
 });
