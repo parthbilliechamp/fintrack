@@ -1,57 +1,64 @@
 import { Router, Request, Response } from 'express';
-import { readData, appendData, updateData, deleteData } from '../storage';
+import { Expense } from '../database/models';
 import logger from '../logger';
 
 const router = Router();
 
-interface Expense {
-  id: string;
-  userId: string;
-  category: 'Dine' | 'Grocery' | 'Personal';
-  details: string;
-  date: string;
-  amount: number;
-}
-
 // Get monthly aggregates for a user (MUST be before /:userId/:id route)
-router.get('/:userId/aggregates/monthly', (req: Request, res: Response) => {
+router.get('/:userId/aggregates/monthly', async (req: Request, res: Response) => {
   try {
     const { userId } = req.params;
     const { year, month } = req.query;
     
-    const expenses = readData('expenses') as Expense[];
-    let userExpenses = expenses.filter((e: Expense) => e.userId === userId);
-
-    // Filter by year and month if provided
-    if (year || month) {
-      userExpenses = userExpenses.filter((expense: Expense) => {
-        const expenseDate = new Date(expense.date);
-        const matchesYear = !year || expenseDate.getFullYear() === parseInt(year as string);
-        const matchesMonth = !month || expenseDate.getMonth() === parseInt(month as string);
-        return matchesYear && matchesMonth;
-      });
+    // Build date filter
+    const dateFilter: any = {};
+    if (year) {
+      const yearNum = parseInt(year as string);
+      dateFilter.$gte = new Date(yearNum, month ? parseInt(month as string) : 0, 1);
+      dateFilter.$lt = month 
+        ? new Date(yearNum, parseInt(month as string) + 1, 1)
+        : new Date(yearNum + 1, 0, 1);
+    } else if (month) {
+      const currentYear = new Date().getFullYear();
+      const monthNum = parseInt(month as string);
+      dateFilter.$gte = new Date(currentYear, monthNum, 1);
+      dateFilter.$lt = new Date(currentYear, monthNum + 1, 1);
     }
 
-    // Group by month
-    const monthlyData: { [key: string]: { month: string; total: number; count: number } } = {};
-    
-    userExpenses.forEach((expense: Expense) => {
-      const date = new Date(expense.date);
-      const monthKey = `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}`;
-      
-      if (!monthlyData[monthKey]) {
-        monthlyData[monthKey] = {
-          month: monthKey,
-          total: 0,
-          count: 0
-        };
-      }
-      
-      monthlyData[monthKey].total += expense.amount;
-      monthlyData[monthKey].count++;
-    });
+    const matchStage: any = { userId };
+    if (Object.keys(dateFilter).length > 0) {
+      matchStage.date = dateFilter;
+    }
 
-    const result = Object.values(monthlyData).sort((a, b) => a.month.localeCompare(b.month));
+    const result = await Expense.aggregate([
+      { $match: matchStage },
+      {
+        $group: {
+          _id: {
+            year: { $year: '$date' },
+            month: { $month: '$date' }
+          },
+          total: { $sum: '$amount' },
+          count: { $sum: 1 }
+        }
+      },
+      {
+        $project: {
+          _id: 0,
+          month: {
+            $concat: [
+              { $toString: '$_id.year' },
+              '-',
+              { $cond: [{ $lt: ['$_id.month', 10] }, { $concat: ['0', { $toString: '$_id.month' }] }, { $toString: '$_id.month' }] }
+            ]
+          },
+          total: 1,
+          count: 1
+        }
+      },
+      { $sort: { month: 1 } }
+    ]);
+
     logger.debug('Monthly aggregates retrieved', { userId, count: result.length });
     res.status(200).json(result);
   } catch (error) {
@@ -61,41 +68,50 @@ router.get('/:userId/aggregates/monthly', (req: Request, res: Response) => {
 });
 
 // Get category aggregates for a user (MUST be before /:userId/:id route)
-router.get('/:userId/aggregates/category', (req: Request, res: Response) => {
+router.get('/:userId/aggregates/category', async (req: Request, res: Response) => {
   try {
     const { userId } = req.params;
     const { year, month } = req.query;
     
-    const expenses = readData('expenses') as Expense[];
-    let userExpenses = expenses.filter((e: Expense) => e.userId === userId);
-
-    // Filter by year and month if provided
-    if (year || month) {
-      userExpenses = userExpenses.filter((expense: Expense) => {
-        const expenseDate = new Date(expense.date);
-        const matchesYear = !year || expenseDate.getFullYear() === parseInt(year as string);
-        const matchesMonth = !month || expenseDate.getMonth() === parseInt(month as string);
-        return matchesYear && matchesMonth;
-      });
+    // Build date filter
+    const dateFilter: any = {};
+    if (year) {
+      const yearNum = parseInt(year as string);
+      dateFilter.$gte = new Date(yearNum, month ? parseInt(month as string) : 0, 1);
+      dateFilter.$lt = month 
+        ? new Date(yearNum, parseInt(month as string) + 1, 1)
+        : new Date(yearNum + 1, 0, 1);
+    } else if (month) {
+      const currentYear = new Date().getFullYear();
+      const monthNum = parseInt(month as string);
+      dateFilter.$gte = new Date(currentYear, monthNum, 1);
+      dateFilter.$lt = new Date(currentYear, monthNum + 1, 1);
     }
 
-    // Group by category
-    const categoryData: { [key: string]: { category: string; total: number; count: number } } = {};
-    
-    userExpenses.forEach((expense: Expense) => {
-      if (!categoryData[expense.category]) {
-        categoryData[expense.category] = {
-          category: expense.category,
-          total: 0,
-          count: 0
-        };
-      }
-      
-      categoryData[expense.category].total += expense.amount;
-      categoryData[expense.category].count++;
-    });
+    const matchStage: any = { userId };
+    if (Object.keys(dateFilter).length > 0) {
+      matchStage.date = dateFilter;
+    }
 
-    const result = Object.values(categoryData);
+    const result = await Expense.aggregate([
+      { $match: matchStage },
+      {
+        $group: {
+          _id: '$category',
+          total: { $sum: '$amount' },
+          count: { $sum: 1 }
+        }
+      },
+      {
+        $project: {
+          _id: 0,
+          category: '$_id',
+          total: 1,
+          count: 1
+        }
+      }
+    ]);
+
     logger.debug('Category aggregates retrieved', { userId, count: result.length });
     res.status(200).json(result);
   } catch (error) {
@@ -105,39 +121,66 @@ router.get('/:userId/aggregates/category', (req: Request, res: Response) => {
 });
 
 // Get expense summary (totals, averages, etc.) (MUST be before /:userId/:id route)
-router.get('/:userId/summary', (req: Request, res: Response) => {
+router.get('/:userId/summary', async (req: Request, res: Response) => {
   try {
     const { userId } = req.params;
     const { year, month } = req.query;
     
-    const expenses = readData('expenses') as Expense[];
-    let userExpenses = expenses.filter((e: Expense) => e.userId === userId);
-
-    // Filter by year and month if provided
-    if (year || month) {
-      userExpenses = userExpenses.filter((expense: Expense) => {
-        const expenseDate = new Date(expense.date);
-        const matchesYear = !year || expenseDate.getFullYear() === parseInt(year as string);
-        const matchesMonth = !month || expenseDate.getMonth() === parseInt(month as string);
-        return matchesYear && matchesMonth;
-      });
+    // Build date filter
+    const dateFilter: any = {};
+    if (year) {
+      const yearNum = parseInt(year as string);
+      dateFilter.$gte = new Date(yearNum, month ? parseInt(month as string) : 0, 1);
+      dateFilter.$lt = month 
+        ? new Date(yearNum, parseInt(month as string) + 1, 1)
+        : new Date(yearNum + 1, 0, 1);
+    } else if (month) {
+      const currentYear = new Date().getFullYear();
+      const monthNum = parseInt(month as string);
+      dateFilter.$gte = new Date(currentYear, monthNum, 1);
+      dateFilter.$lt = new Date(currentYear, monthNum + 1, 1);
     }
 
-    const total = userExpenses.reduce((sum, exp) => sum + exp.amount, 0);
-    const count = userExpenses.length;
-    const average = count > 0 ? total / count : 0;
+    const matchStage: any = { userId };
+    if (Object.keys(dateFilter).length > 0) {
+      matchStage.date = dateFilter;
+    }
 
-    // Get category breakdown
+    // Get summary with category breakdown
+    const [summaryResult, categoryResult] = await Promise.all([
+      Expense.aggregate([
+        { $match: matchStage },
+        {
+          $group: {
+            _id: null,
+            total: { $sum: '$amount' },
+            count: { $sum: 1 },
+            average: { $avg: '$amount' }
+          }
+        }
+      ]),
+      Expense.aggregate([
+        { $match: matchStage },
+        {
+          $group: {
+            _id: '$category',
+            total: { $sum: '$amount' }
+          }
+        }
+      ])
+    ]);
+
+    const summary = summaryResult[0] || { total: 0, count: 0, average: 0 };
     const byCategory: { [key: string]: number } = {};
-    userExpenses.forEach((expense: Expense) => {
-      byCategory[expense.category] = (byCategory[expense.category] || 0) + expense.amount;
+    categoryResult.forEach((cat: any) => {
+      byCategory[cat._id] = cat.total;
     });
 
-    logger.debug('Expense summary retrieved', { userId, total, count });
+    logger.debug('Expense summary retrieved', { userId, total: summary.total, count: summary.count });
     res.status(200).json({
-      total,
-      count,
-      average,
+      total: summary.total,
+      count: summary.count,
+      average: summary.average || 0,
       byCategory
     });
   } catch (error) {
@@ -147,12 +190,11 @@ router.get('/:userId/summary', (req: Request, res: Response) => {
 });
 
 // Get all expenses for a user
-router.get('/:userId', (req: Request, res: Response) => {
+router.get('/:userId', async (req: Request, res: Response) => {
   try {
     const { userId } = req.params;
     logger.debug('Fetching expenses', { userId });
-    const expenses = readData('expenses') as Expense[];
-    const userExpenses = expenses.filter((e: Expense) => e.userId === userId);
+    const userExpenses = await Expense.find({ userId }).sort({ date: -1 });
     logger.info('Expenses fetched', { userId, count: userExpenses.length });
     res.status(200).json(userExpenses);
   } catch (error) {
@@ -162,12 +204,11 @@ router.get('/:userId', (req: Request, res: Response) => {
 });
 
 // Get expense by id
-router.get('/:userId/:id', (req: Request, res: Response) => {
+router.get('/:userId/:id', async (req: Request, res: Response) => {
   try {
     const { userId, id } = req.params;
     logger.debug('Fetching expense by id', { userId, expenseId: id });
-    const expenses = readData('expenses') as Expense[];
-    const expense = expenses.find((e: Expense) => e.id === id && e.userId === userId);
+    const expense = await Expense.findOne({ _id: id, userId });
 
     if (!expense) {
       logger.warn('Expense not found', { userId, expenseId: id });
@@ -184,7 +225,7 @@ router.get('/:userId/:id', (req: Request, res: Response) => {
 });
 
 // Create a new expense
-router.post('/:userId', (req: Request, res: Response) => {
+router.post('/:userId', async (req: Request, res: Response) => {
   try {
     const { userId } = req.params;
     const { category, details, date, amount } = req.body;
@@ -222,15 +263,16 @@ router.post('/:userId', (req: Request, res: Response) => {
       return;
     }
 
-    const newExpense = appendData('expenses', {
+    const newExpense = new Expense({
       userId,
       category,
       details,
-      date, // Store as ISO string
+      date: dateObj,
       amount
     });
+    await newExpense.save();
 
-    logger.info('Expense created', { userId, expenseId: newExpense.id, category, amount });
+    logger.info('Expense created', { userId, expenseId: newExpense._id, category, amount });
     res.status(201).json(newExpense);
   } catch (error) {
     logger.error('Failed to create expense', { error: (error as Error).message });
@@ -239,7 +281,7 @@ router.post('/:userId', (req: Request, res: Response) => {
 });
 
 // Update an expense
-router.put('/:userId/:id', (req: Request, res: Response) => {
+router.put('/:userId/:id', async (req: Request, res: Response) => {
   try {
     const { userId, id } = req.params;
     const { category, details, date, amount } = req.body;
@@ -277,22 +319,17 @@ router.put('/:userId/:id', (req: Request, res: Response) => {
       return;
     }
 
-    const expenses = readData('expenses') as Expense[];
-    const expense = expenses.find((e: Expense) => e.id === id && e.userId === userId);
+    const updatedExpense = await Expense.findOneAndUpdate(
+      { _id: id, userId },
+      { category, details, date: dateObj, amount },
+      { new: true }
+    );
 
-    if (!expense) {
+    if (!updatedExpense) {
       logger.warn('Update expense failed: not found', { userId, expenseId: id });
       res.status(404).json({ error: 'Expense not found' });
       return;
     }
-
-    const updatedExpense = updateData('expenses', id, {
-      userId,
-      category,
-      details,
-      date,
-      amount
-    });
 
     logger.info('Expense updated', { userId, expenseId: id });
     res.status(200).json(updatedExpense);
@@ -303,21 +340,19 @@ router.put('/:userId/:id', (req: Request, res: Response) => {
 });
 
 // Delete an expense
-router.delete('/:userId/:id', (req: Request, res: Response) => {
+router.delete('/:userId/:id', async (req: Request, res: Response) => {
   try {
     const { userId, id } = req.params;
     logger.debug('Deleting expense', { userId, expenseId: id });
 
-    const expenses = readData('expenses') as Expense[];
-    const expense = expenses.find((e: Expense) => e.id === id && e.userId === userId);
+    const deletedExpense = await Expense.findOneAndDelete({ _id: id, userId });
 
-    if (!expense) {
+    if (!deletedExpense) {
       logger.warn('Delete expense failed: not found', { userId, expenseId: id });
       res.status(404).json({ error: 'Expense not found' });
       return;
     }
 
-    deleteData('expenses', id);
     logger.info('Expense deleted', { userId, expenseId: id });
     res.status(200).json({ message: 'Expense deleted successfully' });
   } catch (error) {

@@ -1,18 +1,11 @@
 import { Router, Request, Response } from 'express';
-import { readData, appendData } from '../storage';
+import { User } from '../database/models';
 import logger from '../logger';
 
 const router = Router();
 
-interface User {
-  id: string;
-  email: string;
-  password: string;
-  name: string;
-}
-
 // Register endpoint
-router.post('/register', (req: Request, res: Response) => {
+router.post('/register', async (req: Request, res: Response) => {
   try {
     const { email, password, name } = req.body;
     logger.debug('Registration attempt', { email, name });
@@ -24,25 +17,28 @@ router.post('/register', (req: Request, res: Response) => {
       return;
     }
 
-    const users = readData('users') as User[];
-
     // Check if user already exists
-    if (users.some((u: User) => u.email === email)) {
+    const existingUser = await User.findOne({ email: email.toLowerCase() });
+    if (existingUser) {
       logger.warn('Registration failed: user already exists', { email });
       res.status(409).json({ error: 'User already exists' });
       return;
     }
 
-    // Create new user
-    const newUser = appendData('users', {
+    // Create new user (password will be hashed by pre-save hook)
+    const newUser = new User({
       email,
       password,
       name
     });
+    await newUser.save();
 
-    logger.info('User registered successfully', { userId: newUser.id, email });
-    const { password: _, ...userWithoutPassword } = newUser;
-    res.status(201).json(userWithoutPassword);
+    logger.info('User registered successfully', { userId: newUser._id, email });
+    
+    // Return user without password
+    const userResponse: Record<string, any> = newUser.toJSON();
+    delete userResponse.password;
+    res.status(201).json(userResponse);
   } catch (error) {
     logger.error('Registration failed', { error: (error as Error).message });
     res.status(500).json({ error: 'Registration failed' });
@@ -50,7 +46,7 @@ router.post('/register', (req: Request, res: Response) => {
 });
 
 // Login endpoint
-router.post('/login', (req: Request, res: Response) => {
+router.post('/login', async (req: Request, res: Response) => {
   try {
     const { email, password } = req.body;
     logger.debug('Login attempt', { email });
@@ -62,18 +58,28 @@ router.post('/login', (req: Request, res: Response) => {
       return;
     }
 
-    const users = readData('users') as User[];
-    const user = users.find((u: User) => u.email === email && u.password === password);
-
+    // Find user by email
+    const user = await User.findOne({ email: email.toLowerCase() });
     if (!user) {
       logger.warn('Login failed: invalid credentials', { email });
       res.status(401).json({ error: 'Invalid credentials' });
       return;
     }
 
-    logger.info('User logged in successfully', { userId: user.id, email });
-    const { password: _, ...userWithoutPassword } = user;
-    res.status(200).json(userWithoutPassword);
+    // Compare password
+    const isMatch = await user.comparePassword(password);
+    if (!isMatch) {
+      logger.warn('Login failed: invalid credentials', { email });
+      res.status(401).json({ error: 'Invalid credentials' });
+      return;
+    }
+
+    logger.info('User logged in successfully', { userId: user._id, email });
+    
+    // Return user without password
+    const userResponse: Record<string, any> = user.toJSON();
+    delete userResponse.password;
+    res.status(200).json(userResponse);
   } catch (error) {
     logger.error('Login failed', { error: (error as Error).message });
     res.status(500).json({ error: 'Login failed' });
@@ -81,16 +87,12 @@ router.post('/login', (req: Request, res: Response) => {
 });
 
 // Get all users endpoint (for debugging, remove in production)
-router.get('/users', (_req: Request, res: Response) => {
+router.get('/users', async (_req: Request, res: Response) => {
   try {
     logger.debug('Fetching all users');
-    const users = readData('users');
-    const usersWithoutPasswords = users.map((u: any) => {
-      const { password: _, ...userWithoutPassword } = u;
-      return userWithoutPassword;
-    });
-    logger.info('Users fetched successfully', { count: usersWithoutPasswords.length });
-    res.status(200).json(usersWithoutPasswords);
+    const users = await User.find().select('-password');
+    logger.info('Users fetched successfully', { count: users.length });
+    res.status(200).json(users);
   } catch (error) {
     logger.error('Failed to fetch users', { error: (error as Error).message });
     res.status(500).json({ error: 'Failed to fetch users' });

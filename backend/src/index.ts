@@ -1,6 +1,8 @@
+import 'dotenv/config';
 import express, { Express, Request, Response } from 'express';
 import cors from 'cors';
 import logger, { requestLogger, errorLogger } from './logger';
+import { connectDatabase, disconnectDatabase } from './database/connection';
 
 const app: Express = express();
 const PORT = process.env.PORT || 3000;
@@ -40,7 +42,41 @@ app.use((err: any, _req: Request, res: Response, _next: Function) => {
   });
 });
 
-// Start server
-app.listen(PORT, () => {
-  logger.info(`Server started`, { port: PORT, url: `http://localhost:${PORT}` });
-});
+// Start server with database connection
+const startServer = async () => {
+  try {
+    // Connect to MongoDB
+    await connectDatabase();
+    
+    // Start Express server
+    const server = app.listen(PORT, () => {
+      logger.info(`Server started`, { port: PORT, url: `http://localhost:${PORT}` });
+    });
+
+    // Graceful shutdown handling
+    const gracefulShutdown = async (signal: string) => {
+      logger.info(`${signal} received. Starting graceful shutdown...`);
+      
+      server.close(async () => {
+        logger.info('HTTP server closed');
+        await disconnectDatabase();
+        process.exit(0);
+      });
+
+      // Force shutdown after 10 seconds
+      setTimeout(() => {
+        logger.error('Could not close connections in time, forcefully shutting down');
+        process.exit(1);
+      }, 10000);
+    };
+
+    process.on('SIGTERM', () => gracefulShutdown('SIGTERM'));
+    process.on('SIGINT', () => gracefulShutdown('SIGINT'));
+
+  } catch (error) {
+    logger.error('Failed to start server', { error: (error as Error).message });
+    process.exit(1);
+  }
+};
+
+startServer();

@@ -1,43 +1,17 @@
 import { Router, Request, Response } from 'express';
-import { readData, appendData, updateData, deleteData } from '../storage';
+import { Investment, ContributionLimit, InvestmentTransaction } from '../database/models';
 import logger from '../logger';
 
 const router = Router();
 
-interface Investment {
-  id: string;
-  userId: string;
-  accountName: string;
-  accountType: 'RRSP' | 'TFSA' | 'FHSA' | 'Savings';
-  investedAmount: number;
-  currentValue: number;
-}
-
-interface ContributionLimit {
-  id: string;
-  userId: string;
-  year: number;
-  accountType: 'RRSP' | 'TFSA' | 'FHSA';
-  limit: number;
-}
-
-interface InvestmentTransaction {
-  id: string;
-  userId: string;
-  amount: number;
-  date: string;
-  accountId: string;
-}
-
 // ============ INVESTMENT ACCOUNT ENDPOINTS ============
 
 // Get all investments for a user
-router.get('/:userId', (req: Request, res: Response) => {
+router.get('/:userId', async (req: Request, res: Response) => {
   try {
     const { userId } = req.params;
     logger.debug('Fetching investments', { userId });
-    const investments = readData('investments') as Investment[];
-    const userInvestments = investments.filter((i: Investment) => i.userId === userId);
+    const userInvestments = await Investment.find({ userId });
     logger.info('Investments fetched', { userId, count: userInvestments.length });
     res.status(200).json(userInvestments);
   } catch (error) {
@@ -47,12 +21,11 @@ router.get('/:userId', (req: Request, res: Response) => {
 });
 
 // Get investment by id
-router.get('/:userId/:id', (req: Request, res: Response) => {
+router.get('/:userId/:id', async (req: Request, res: Response) => {
   try {
     const { userId, id } = req.params;
     logger.debug('Fetching investment by id', { userId, investmentId: id });
-    const investments = readData('investments') as Investment[];
-    const investment = investments.find((i: Investment) => i.id === id && i.userId === userId);
+    const investment = await Investment.findOne({ _id: id, userId });
 
     if (!investment) {
       logger.warn('Investment not found', { userId, investmentId: id });
@@ -69,7 +42,7 @@ router.get('/:userId/:id', (req: Request, res: Response) => {
 });
 
 // Create a new investment
-router.post('/:userId', (req: Request, res: Response) => {
+router.post('/:userId', async (req: Request, res: Response) => {
   try {
     const { userId } = req.params;
     const { accountName, accountType, investedAmount, currentValue } = req.body;
@@ -105,15 +78,16 @@ router.post('/:userId', (req: Request, res: Response) => {
       return;
     }
 
-    const newInvestment = appendData('investments', {
+    const newInvestment = new Investment({
       userId,
-      accountName,
+      accountName: accountName.trim(),
       accountType,
       investedAmount,
       currentValue
     });
+    await newInvestment.save();
 
-    logger.info('Investment created', { userId, investmentId: newInvestment.id, accountType });
+    logger.info('Investment created', { userId, investmentId: newInvestment._id, accountType });
     res.status(201).json(newInvestment);
   } catch (error) {
     logger.error('Failed to create investment', { error: (error as Error).message });
@@ -122,7 +96,7 @@ router.post('/:userId', (req: Request, res: Response) => {
 });
 
 // Update an investment
-router.put('/:userId/:id', (req: Request, res: Response) => {
+router.put('/:userId/:id', async (req: Request, res: Response) => {
   try {
     const { userId, id } = req.params;
     const { accountName, accountType, investedAmount, currentValue } = req.body;
@@ -152,21 +126,21 @@ router.put('/:userId/:id', (req: Request, res: Response) => {
       return;
     }
 
-    const investments = readData('investments') as Investment[];
-    const investment = investments.find((i: Investment) => i.id === id && i.userId === userId);
+    const updatedInvestment = await Investment.findOneAndUpdate(
+      { _id: id, userId },
+      {
+        accountName: accountName.trim(),
+        accountType,
+        investedAmount,
+        currentValue
+      },
+      { new: true }
+    );
 
-    if (!investment) {
+    if (!updatedInvestment) {
       res.status(404).json({ error: 'Investment not found' });
       return;
     }
-
-    const updatedInvestment = updateData('investments', id, {
-      userId,
-      accountName: accountName.trim(),
-      accountType,
-      investedAmount,
-      currentValue
-    });
 
     logger.info('Investment updated', { userId, investmentId: id });
     res.status(200).json(updatedInvestment);
@@ -177,21 +151,22 @@ router.put('/:userId/:id', (req: Request, res: Response) => {
 });
 
 // Delete an investment
-router.delete('/:userId/:id', (req: Request, res: Response) => {
+router.delete('/:userId/:id', async (req: Request, res: Response) => {
   try {
     const { userId, id } = req.params;
     logger.debug('Deleting investment', { userId, investmentId: id });
 
-    const investments = readData('investments') as Investment[];
-    const investment = investments.find((i: Investment) => i.id === id && i.userId === userId);
+    const deletedInvestment = await Investment.findOneAndDelete({ _id: id, userId });
 
-    if (!investment) {
+    if (!deletedInvestment) {
       logger.warn('Delete investment failed: not found', { userId, investmentId: id });
       res.status(404).json({ error: 'Investment not found' });
       return;
     }
 
-    deleteData('investments', id);
+    // Also delete related transactions
+    await InvestmentTransaction.deleteMany({ accountId: id });
+
     logger.info('Investment deleted', { userId, investmentId: id });
     res.status(200).json({ message: 'Investment deleted successfully' });
   } catch (error) {
@@ -203,12 +178,11 @@ router.delete('/:userId/:id', (req: Request, res: Response) => {
 // ============ CONTRIBUTION LIMITS ENDPOINTS ============
 
 // Get contribution limits for a user
-router.get('/:userId/limits/all', (req: Request, res: Response) => {
+router.get('/:userId/limits/all', async (req: Request, res: Response) => {
   try {
     const { userId } = req.params;
     logger.debug('Fetching contribution limits', { userId });
-    const limits = readData('contributionLimits') as ContributionLimit[];
-    const userLimits = limits.filter((l: ContributionLimit) => l.userId === userId);
+    const userLimits = await ContributionLimit.find({ userId });
     logger.info('Contribution limits fetched', { userId, count: userLimits.length });
     res.status(200).json(userLimits);
   } catch (error) {
@@ -218,7 +192,7 @@ router.get('/:userId/limits/all', (req: Request, res: Response) => {
 });
 
 // Create contribution limit
-router.post('/:userId/limits', (req: Request, res: Response) => {
+router.post('/:userId/limits', async (req: Request, res: Response) => {
   try {
     const { userId } = req.params;
     const { year, accountType, limit } = req.body;
@@ -242,23 +216,29 @@ router.post('/:userId/limits', (req: Request, res: Response) => {
       return;
     }
 
-    const newLimit = appendData('contributionLimits', {
+    const newLimit = new ContributionLimit({
       userId,
       year,
       accountType,
       limit
     });
+    await newLimit.save();
 
-    logger.info('Contribution limit created', { userId, limitId: newLimit.id, year, accountType });
+    logger.info('Contribution limit created', { userId, limitId: newLimit._id, year, accountType });
     res.status(201).json(newLimit);
-  } catch (error) {
+  } catch (error: any) {
+    // Handle duplicate key error
+    if (error.code === 11000) {
+      res.status(409).json({ error: 'Contribution limit for this year and account type already exists' });
+      return;
+    }
     logger.error('Failed to create contribution limit', { error: (error as Error).message });
     res.status(500).json({ error: 'Failed to create contribution limit' });
   }
 });
 
 // Update contribution limit
-router.put('/:userId/limits/:id', (req: Request, res: Response) => {
+router.put('/:userId/limits/:id', async (req: Request, res: Response) => {
   try {
     const { userId, id } = req.params;
     const { year, accountType, limit } = req.body;
@@ -282,20 +262,16 @@ router.put('/:userId/limits/:id', (req: Request, res: Response) => {
       return;
     }
 
-    const limits = readData('contributionLimits') as ContributionLimit[];
-    const existing = limits.find((l: ContributionLimit) => l.id === id && l.userId === userId);
+    const updatedLimit = await ContributionLimit.findOneAndUpdate(
+      { _id: id, userId },
+      { year, accountType, limit },
+      { new: true }
+    );
 
-    if (!existing) {
+    if (!updatedLimit) {
       res.status(404).json({ error: 'Contribution limit not found' });
       return;
     }
-
-    const updatedLimit = updateData('contributionLimits', id, {
-      userId,
-      year,
-      accountType,
-      limit
-    });
 
     logger.info('Contribution limit updated', { userId, limitId: id });
     res.status(200).json(updatedLimit);
@@ -306,21 +282,19 @@ router.put('/:userId/limits/:id', (req: Request, res: Response) => {
 });
 
 // Delete contribution limit
-router.delete('/:userId/limits/:id', (req: Request, res: Response) => {
+router.delete('/:userId/limits/:id', async (req: Request, res: Response) => {
   try {
     const { userId, id } = req.params;
     logger.debug('Deleting contribution limit', { userId, limitId: id });
 
-    const limits = readData('contributionLimits') as ContributionLimit[];
-    const existing = limits.find((l: ContributionLimit) => l.id === id && l.userId === userId);
+    const deletedLimit = await ContributionLimit.findOneAndDelete({ _id: id, userId });
 
-    if (!existing) {
+    if (!deletedLimit) {
       logger.warn('Delete contribution limit failed: not found', { userId, limitId: id });
       res.status(404).json({ error: 'Contribution limit not found' });
       return;
     }
 
-    deleteData('contributionLimits', id);
     logger.info('Contribution limit deleted', { userId, limitId: id });
     res.status(200).json({ message: 'Contribution limit deleted successfully' });
   } catch (error) {
@@ -332,12 +306,11 @@ router.delete('/:userId/limits/:id', (req: Request, res: Response) => {
 // ============ TRANSACTIONS ENDPOINTS ============
 
 // Get all transactions for a user
-router.get('/:userId/transactions/all', (req: Request, res: Response) => {
+router.get('/:userId/transactions/all', async (req: Request, res: Response) => {
   try {
     const { userId } = req.params;
     logger.debug('Fetching transactions', { userId });
-    const transactions = readData('investmentTransactions') as InvestmentTransaction[];
-    const userTransactions = transactions.filter((t: InvestmentTransaction) => t.userId === userId);
+    const userTransactions = await InvestmentTransaction.find({ userId }).sort({ date: -1 });
     logger.info('Transactions fetched', { userId, count: userTransactions.length });
     res.status(200).json(userTransactions);
   } catch (error) {
@@ -347,7 +320,7 @@ router.get('/:userId/transactions/all', (req: Request, res: Response) => {
 });
 
 // Create transaction
-router.post('/:userId/transactions', (req: Request, res: Response) => {
+router.post('/:userId/transactions', async (req: Request, res: Response) => {
   try {
     const { userId } = req.params;
     const { amount, date, accountId } = req.body;
@@ -379,73 +352,54 @@ router.post('/:userId/transactions', (req: Request, res: Response) => {
     }
 
     // Verify that the investment account exists for this user
-    const investments = readData('investments') as Investment[];
-    const investment = investments.find((i: Investment) => i.id === accountId && i.userId === userId);
+    const investment = await Investment.findOne({ _id: accountId, userId });
     if (!investment) {
       res.status(404).json({ error: 'Investment account not found' });
       return;
     }
 
-    const newTransaction = appendData('investmentTransactions', {
+    // Create the transaction
+    const newTransaction = new InvestmentTransaction({
       userId,
       amount,
-      date,
+      date: dateObj,
       accountId
     });
-
-    // Re-read the investment to get the latest data
-    const currentInvestments = readData('investments') as Investment[];
-    const currentInvestment = currentInvestments.find((i: Investment) => i.id === accountId && i.userId === userId);
-    
-    if (!currentInvestment) {
-      logger.error('Investment not found after transaction creation', { userId, accountId });
-      res.status(201).json({
-        transaction: newTransaction,
-        updatedInvestment: null
-      });
-      return;
-    }
+    await newTransaction.save();
 
     // Update the account's invested amount and current value (keeping growth % same)
-    // Example: invested=5000, current=5500, growth=10%
-    // Add 1000 -> new invested=6000, new current=6000 * 1.10 = 6600
-    const growthPercentage = currentInvestment.investedAmount > 0 
-      ? ((currentInvestment.currentValue - currentInvestment.investedAmount) / currentInvestment.investedAmount) 
+    const growthPercentage = investment.investedAmount > 0 
+      ? ((investment.currentValue - investment.investedAmount) / investment.investedAmount) 
       : 0;
     
-    const newInvestedAmount = currentInvestment.investedAmount + amount;
+    const newInvestedAmount = investment.investedAmount + amount;
     const newCurrentValue = newInvestedAmount * (1 + growthPercentage);
     
     logger.debug('Updating investment after transaction', {
       accountId,
-      oldInvested: currentInvestment.investedAmount,
-      oldCurrent: currentInvestment.currentValue,
+      oldInvested: investment.investedAmount,
+      oldCurrent: investment.currentValue,
       growthPercentage: (growthPercentage * 100).toFixed(2) + '%',
       transactionAmount: amount,
       newInvested: newInvestedAmount,
       newCurrent: newCurrentValue
     });
-    
-    try {
-      const updatedInvestment = updateData('investments', accountId, {
+
+    const updatedInvestment = await Investment.findByIdAndUpdate(
+      accountId,
+      {
         investedAmount: newInvestedAmount,
         currentValue: newCurrentValue
-      });
-      
-      logger.info('Transaction created and investment updated', { userId, transactionId: newTransaction.id, accountId });
+      },
+      { new: true }
+    );
 
-      // Return both the transaction and updated investment
-      res.status(201).json({
-        transaction: newTransaction,
-        updatedInvestment: updatedInvestment
-      });
-    } catch (updateError) {
-      logger.error('Error updating investment after transaction', { error: (updateError as Error).message });
-      res.status(201).json({
-        transaction: newTransaction,
-        updatedInvestment: null
-      });
-    }
+    logger.info('Transaction created and investment updated', { userId, transactionId: newTransaction._id, accountId });
+
+    res.status(201).json({
+      transaction: newTransaction,
+      updatedInvestment: updatedInvestment
+    });
   } catch (error) {
     logger.error('Failed to create transaction', { error: (error as Error).message });
     res.status(500).json({ error: 'Failed to create transaction' });
@@ -453,21 +407,19 @@ router.post('/:userId/transactions', (req: Request, res: Response) => {
 });
 
 // Delete transaction
-router.delete('/:userId/transactions/:id', (req: Request, res: Response) => {
+router.delete('/:userId/transactions/:id', async (req: Request, res: Response) => {
   try {
     const { userId, id } = req.params;
     logger.debug('Deleting transaction', { userId, transactionId: id });
 
-    const transactions = readData('investmentTransactions') as InvestmentTransaction[];
-    const transaction = transactions.find((t: InvestmentTransaction) => t.id === id && t.userId === userId);
+    const deletedTransaction = await InvestmentTransaction.findOneAndDelete({ _id: id, userId });
 
-    if (!transaction) {
+    if (!deletedTransaction) {
       logger.warn('Delete transaction failed: not found', { userId, transactionId: id });
       res.status(404).json({ error: 'Transaction not found' });
       return;
     }
 
-    deleteData('investmentTransactions', id);
     logger.info('Transaction deleted', { userId, transactionId: id });
     res.status(200).json({ message: 'Transaction deleted successfully' });
   } catch (error) {
@@ -479,7 +431,7 @@ router.delete('/:userId/transactions/:id', (req: Request, res: Response) => {
 // ============ CONTRIBUTION STATUS ENDPOINTS ============
 
 // Get contribution status for a user (calculate used from transactions by year)
-router.get('/:userId/limits/status', (req: Request, res: Response) => {
+router.get('/:userId/limits/status', async (req: Request, res: Response) => {
   try {
     const { userId } = req.params;
     const year = req.query.year ? parseInt(req.query.year as string) : new Date().getFullYear();
@@ -491,31 +443,35 @@ router.get('/:userId/limits/status', (req: Request, res: Response) => {
     }
 
     // Get contribution limits for this user and year
-    const limits = readData('contributionLimits') as ContributionLimit[];
-    const yearLimits = limits.filter((l: ContributionLimit) => l.userId === userId && l.year === year);
+    const yearLimits = await ContributionLimit.find({ userId, year });
 
     // Get investments for this user (to map accountId to accountType)
-    const investments = readData('investments') as Investment[];
-    const userInvestments = investments.filter((i: Investment) => i.userId === userId);
+    const userInvestments = await Investment.find({ userId });
 
-    // Get transactions for this user
-    const transactions = readData('investmentTransactions') as InvestmentTransaction[];
-    const userTransactions = transactions.filter((t: InvestmentTransaction) => t.userId === userId);
+    // Build a map of accountId to accountType
+    const accountTypeMap = new Map<string, string>();
+    userInvestments.forEach(inv => {
+      accountTypeMap.set(inv._id, inv.accountType);
+    });
 
-    // Calculate used amounts by account type from transactions in the selected year
-    const result = yearLimits.map((limit: ContributionLimit) => {
+    // Get transactions for this user in the selected year
+    const startOfYear = new Date(year, 0, 1);
+    const endOfYear = new Date(year + 1, 0, 1);
+    const userTransactions = await InvestmentTransaction.find({
+      userId,
+      date: { $gte: startOfYear, $lt: endOfYear }
+    });
+
+    // Calculate used amounts by account type
+    const result = yearLimits.map(limit => {
       // Get all accounts of this type
-      const accountsOfType = userInvestments.filter((i: Investment) => i.accountType === limit.accountType);
-      const accountIds = accountsOfType.map((i: Investment) => i.id);
+      const accountsOfType = userInvestments.filter(inv => inv.accountType === limit.accountType);
+      const accountIds = accountsOfType.map(inv => inv._id);
       
-      // Sum all transactions for these accounts in the selected year
+      // Sum all transactions for these accounts
       const used = userTransactions
-        .filter((t: InvestmentTransaction) => {
-          const transactionDate = new Date(t.date);
-          const transactionYear = transactionDate.getFullYear();
-          return accountIds.includes(t.accountId) && transactionYear === year;
-        })
-        .reduce((sum: number, t: InvestmentTransaction) => sum + t.amount, 0);
+        .filter(t => accountIds.includes(t.accountId))
+        .reduce((sum, t) => sum + t.amount, 0);
 
       return {
         accountType: limit.accountType,
@@ -534,41 +490,39 @@ router.get('/:userId/limits/status', (req: Request, res: Response) => {
 });
 
 // Get investment summary by account type
-router.get('/:userId/aggregates/by-account-type', (req: Request, res: Response) => {
+router.get('/:userId/aggregates/by-account-type', async (req: Request, res: Response) => {
   try {
     const { userId } = req.params;
-    const investments = readData('investments') as Investment[];
-    const userInvestments = investments.filter((i: Investment) => i.userId === userId);
 
-    // Group by account type
-    const accountTypeData: { [key: string]: { accountType: string; totalInvested: number; totalValue: number; count: number; growth: number; growthPercentage: number } } = {};
-    
-    userInvestments.forEach((investment: Investment) => {
-      if (!accountTypeData[investment.accountType]) {
-        accountTypeData[investment.accountType] = {
-          accountType: investment.accountType,
-          totalInvested: 0,
-          totalValue: 0,
-          count: 0,
-          growth: 0,
-          growthPercentage: 0
-        };
+    const result = await Investment.aggregate([
+      { $match: { userId } },
+      {
+        $group: {
+          _id: '$accountType',
+          totalInvested: { $sum: '$investedAmount' },
+          totalValue: { $sum: '$currentValue' },
+          count: { $sum: 1 }
+        }
+      },
+      {
+        $project: {
+          _id: 0,
+          accountType: '$_id',
+          totalInvested: 1,
+          totalValue: 1,
+          count: 1,
+          growth: { $subtract: ['$totalValue', '$totalInvested'] },
+          growthPercentage: {
+            $cond: [
+              { $eq: ['$totalInvested', 0] },
+              0,
+              { $multiply: [{ $divide: [{ $subtract: ['$totalValue', '$totalInvested'] }, '$totalInvested'] }, 100] }
+            ]
+          }
+        }
       }
-      
-      accountTypeData[investment.accountType].totalInvested += investment.investedAmount;
-      accountTypeData[investment.accountType].totalValue += investment.currentValue;
-      accountTypeData[investment.accountType].count++;
-    });
+    ]);
 
-    // Calculate growth for each account type
-    Object.values(accountTypeData).forEach(data => {
-      data.growth = data.totalValue - data.totalInvested;
-      data.growthPercentage = data.totalInvested > 0 
-        ? ((data.totalValue - data.totalInvested) / data.totalInvested) * 100 
-        : 0;
-    });
-
-    const result = Object.values(accountTypeData);
     logger.debug('Investment aggregates by account type retrieved', { userId, count: result.length });
     res.status(200).json(result);
   } catch (error) {
@@ -578,33 +532,48 @@ router.get('/:userId/aggregates/by-account-type', (req: Request, res: Response) 
 });
 
 // Get overall investment summary
-router.get('/:userId/summary', (req: Request, res: Response) => {
+router.get('/:userId/summary', async (req: Request, res: Response) => {
   try {
     const { userId } = req.params;
-    const investments = readData('investments') as Investment[];
-    const userInvestments = investments.filter((i: Investment) => i.userId === userId);
 
-    const totalInvested = userInvestments.reduce((sum, inv) => sum + inv.investedAmount, 0);
-    const totalValue = userInvestments.reduce((sum, inv) => sum + inv.currentValue, 0);
-    const count = userInvestments.length;
-    const growth = totalValue - totalInvested;
-    const growthPercentage = totalInvested > 0 ? (growth / totalInvested) * 100 : 0;
+    const [summaryResult, byAccountTypeResult] = await Promise.all([
+      Investment.aggregate([
+        { $match: { userId } },
+        {
+          $group: {
+            _id: null,
+            totalInvested: { $sum: '$investedAmount' },
+            totalValue: { $sum: '$currentValue' },
+            count: { $sum: 1 }
+          }
+        }
+      ]),
+      Investment.aggregate([
+        { $match: { userId } },
+        {
+          $group: {
+            _id: '$accountType',
+            invested: { $sum: '$investedAmount' },
+            value: { $sum: '$currentValue' }
+          }
+        }
+      ])
+    ]);
 
-    // Get breakdown by account type
+    const summary = summaryResult[0] || { totalInvested: 0, totalValue: 0, count: 0 };
+    const growth = summary.totalValue - summary.totalInvested;
+    const growthPercentage = summary.totalInvested > 0 ? (growth / summary.totalInvested) * 100 : 0;
+
     const byAccountType: { [key: string]: { invested: number; value: number } } = {};
-    userInvestments.forEach((investment: Investment) => {
-      if (!byAccountType[investment.accountType]) {
-        byAccountType[investment.accountType] = { invested: 0, value: 0 };
-      }
-      byAccountType[investment.accountType].invested += investment.investedAmount;
-      byAccountType[investment.accountType].value += investment.currentValue;
+    byAccountTypeResult.forEach((item: any) => {
+      byAccountType[item._id] = { invested: item.invested, value: item.value };
     });
 
-    logger.debug('Investment summary retrieved', { userId, totalInvested, totalValue, count });
+    logger.debug('Investment summary retrieved', { userId, totalInvested: summary.totalInvested, totalValue: summary.totalValue, count: summary.count });
     res.status(200).json({
-      totalInvested,
-      totalValue,
-      count,
+      totalInvested: summary.totalInvested,
+      totalValue: summary.totalValue,
+      count: summary.count,
       growth,
       growthPercentage,
       byAccountType
