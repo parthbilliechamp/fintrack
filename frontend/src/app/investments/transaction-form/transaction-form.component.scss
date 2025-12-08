@@ -6,6 +6,10 @@
   max-width: 600px;
   margin: 0 auto;
   padding: 0;
+
+  @media (max-width: 600px) {
+    padding: 0;
+  }
 }
 
 .page-header {
@@ -123,12 +127,28 @@
 
 // Responsive design
 @media (max-width: 640px) {
-  .form-card mat-card-content form {
-    .form-actions {
-      flex-direction: column-reverse;
+  .page-header {
+    h2 {
+      font-size: 20px;
+    }
+  }
 
-      button {
-        width: 100%;
+  .form-card {
+    mat-card-header {
+      padding: 16px 16px 0 16px;
+    }
+    
+    mat-card-content {
+      padding: 16px !important;
+
+      form {
+        .form-actions {
+          flex-direction: column-reverse;
+
+          button {
+            width: 100%;
+          }
+        }
       }
     }
   }

@@ -351,4 +351,42 @@ a {
   .text-right {
     text-align: right;
   }
+
+  @media (max-width: 640px) {
+    th, td {
+      padding: 12px 12px;
+    }
+  }
+}
+
+// ============================================
+// Global Responsive Utilities
+// ============================================
+@media (max-width: 640px) {
+  h1 { font-size: 24px; }
+  h2 { font-size: 20px; }
+  h3 { font-size: 16px; }
+  h4 { font-size: 14px; }
+}
+
+// Responsive table wrapper
+.table-responsive {
+  display: block;
+  width: 100%;
+  overflow-x: auto;
+  -webkit-overflow-scrolling: touch;
+}
+
+// Hide on mobile utility
+@media (max-width: 640px) {
+  .hide-mobile {
+    display: none !important;
+  }
+}
+
+// Show only on mobile utility
+@media (min-width: 641px) {
+  .show-mobile-only {
+    display: none !important;
+  }
 }

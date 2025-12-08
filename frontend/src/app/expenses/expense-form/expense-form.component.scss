@@ -86,6 +86,11 @@
         mat-form-field {
           flex: 1;
         }
+
+        @media (max-width: 600px) {
+          flex-direction: column;
+          gap: 16px;
+        }
       }
     }
 
@@ -156,6 +161,16 @@
 
   // Responsive design
   @media (max-width: 640px) {
+    mat-card {
+      mat-card-header {
+        padding: 20px 16px 0 16px !important;
+      }
+      
+      mat-card-content {
+        padding: 0 16px 16px 16px !important;
+      }
+    }
+
     .form-row.two-columns {
       flex-direction: column;
       gap: 20px;

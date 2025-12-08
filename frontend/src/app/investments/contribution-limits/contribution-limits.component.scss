@@ -233,3 +233,48 @@
     }
   }
 }
+
+@media (max-width: 480px) {
+  .contribution-limits-container {
+    .limits-header {
+      flex-direction: column;
+      align-items: flex-start;
+      gap: 12px;
+
+      mat-form-field {
+        width: 100%;
+      }
+    }
+  }
+
+  .editable-limits-table {
+    display: block;
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
+
+    thead tr th,
+    tbody tr td {
+      padding: 10px 6px;
+      font-size: 12px;
+      white-space: nowrap;
+    }
+
+    td.account-type {
+      gap: 8px;
+
+      mat-icon {
+        font-size: 18px;
+        width: 18px;
+        height: 18px;
+      }
+    }
+
+    td.limit-cell .limit-input {
+      width: 80px;
+    }
+
+    td.progress-cell {
+      display: none;
+    }
+  }
+}

@@ -23,6 +23,11 @@
   display: flex;
   gap: 8px;
   margin-bottom: 24px;
+  flex-wrap: wrap;
+
+  @media (max-width: 600px) {
+    gap: 6px;
+  }
 
   .tab-button {
     display: flex;
@@ -38,6 +43,13 @@
     background: transparent;
     color: var(--text-secondary);
     text-decoration: none;
+
+    @media (max-width: 600px) {
+      padding: 8px 14px;
+      font-size: 13px;
+      flex: 1;
+      justify-content: center;
+    }
 
     mat-icon {
       font-size: 18px;
@@ -198,12 +210,22 @@
   }
 
   .investment-form-container {
-    mat-card mat-card-content form {
-      .form-actions {
-        flex-direction: column-reverse;
+    mat-card {
+      mat-card-header {
+        padding: 20px 16px 0 16px !important;
+      }
+      
+      mat-card-content {
+        padding: 16px !important;
 
-        button {
-          width: 100%;
+        form {
+          .form-actions {
+            flex-direction: column-reverse;
+
+            button {
+              width: 100%;
+            }
+          }
         }
       }
     }
