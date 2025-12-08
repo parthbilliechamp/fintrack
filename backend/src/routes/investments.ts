@@ -430,7 +430,7 @@ router.delete('/:userId/transactions/:id', async (req: Request, res: Response) =
 
 // ============ CONTRIBUTION STATUS ENDPOINTS ============
 
-// Get contribution status for a user (calculate used from transactions by year)
+// Get contribution status for a user (calculate used from total invested amounts)
 router.get('/:userId/limits/status', async (req: Request, res: Response) => {
   try {
     const { userId } = req.params;
@@ -442,42 +442,31 @@ router.get('/:userId/limits/status', async (req: Request, res: Response) => {
       return;
     }
 
+    // Define all account types that have contribution limits
+    const accountTypesWithLimits = ['RRSP', 'TFSA', 'FHSA'];
+
     // Get contribution limits for this user and year
     const yearLimits = await ContributionLimit.find({ userId, year });
 
-    // Get investments for this user (to map accountId to accountType)
+    // Get investments for this user and calculate total invested by account type
     const userInvestments = await Investment.find({ userId });
 
-    // Build a map of accountId to accountType
-    const accountTypeMap = new Map<string, string>();
-    userInvestments.forEach(inv => {
-      accountTypeMap.set(inv._id, inv.accountType);
-    });
-
-    // Get transactions for this user in the selected year
-    const startOfYear = new Date(year, 0, 1);
-    const endOfYear = new Date(year + 1, 0, 1);
-    const userTransactions = await InvestmentTransaction.find({
-      userId,
-      date: { $gte: startOfYear, $lt: endOfYear }
-    });
-
-    // Calculate used amounts by account type
-    const result = yearLimits.map(limit => {
-      // Get all accounts of this type
-      const accountsOfType = userInvestments.filter(inv => inv.accountType === limit.accountType);
-      const accountIds = accountsOfType.map(inv => inv._id);
+    // Calculate used amounts for all account types with limits
+    // "Used" is the total investedAmount across all investments of that account type
+    const result = accountTypesWithLimits.map(accountType => {
+      // Get the limit for this account type (if set)
+      const existingLimit = yearLimits.find(l => l.accountType === accountType);
+      const limit = existingLimit ? existingLimit.limit : 0;
       
-      // Sum all transactions for these accounts
-      const used = userTransactions
-        .filter(t => accountIds.includes(t.accountId))
-        .reduce((sum, t) => sum + t.amount, 0);
+      // Get all accounts of this type and sum their invested amounts
+      const accountsOfType = userInvestments.filter(inv => inv.accountType === accountType);
+      const used = accountsOfType.reduce((sum, inv) => sum + inv.investedAmount, 0);
 
       return {
-        accountType: limit.accountType,
-        limit: limit.limit,
+        accountType,
+        limit,
         used,
-        remaining: Math.max(0, limit.limit - used)
+        remaining: limit > 0 ? Math.max(0, limit - used) : 0
       };
     });
 

@@ -1,6 +1,6 @@
 import { Component, OnDestroy, ChangeDetectorRef, ViewChild } from '@angular/core';
 import { CommonModule } from '@angular/common';
-import { RouterOutlet, RouterModule } from '@angular/router';
+import { Router, RouterOutlet, RouterModule } from '@angular/router';
 import { MediaMatcher } from '@angular/cdk/layout';
 import { MatToolbarModule } from '@angular/material/toolbar';
 import { MatSidenavModule } from '@angular/material/sidenav';
@@ -43,7 +43,8 @@ export class AppComponent implements OnDestroy {
   constructor(
     private changeDetectorRef: ChangeDetectorRef,
     private media: MediaMatcher,
-    private authService: AuthService
+    private authService: AuthService,
+    private router: Router
   ) {
     this.mobileQuery = this.media.matchMedia('(max-width: 600px)');
     this._mobileQueryListener = () => changeDetectorRef.detectChanges();
@@ -59,5 +60,6 @@ export class AppComponent implements OnDestroy {
 
   logout(): void {
     this.authService.logout();
+    this.router.navigate(['/auth/login']);
   }
 }

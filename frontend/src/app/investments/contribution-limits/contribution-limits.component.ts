@@ -1,4 +1,4 @@
-import { Component, OnInit } from '@angular/core';
+import { Component, OnInit, OnDestroy } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { RouterModule } from '@angular/router';
@@ -9,6 +9,7 @@ import { MatButtonModule } from '@angular/material/button';
 import { MatCardModule } from '@angular/material/card';
 import { MatProgressBarModule } from '@angular/material/progress-bar';
 import { MatIconModule } from '@angular/material/icon';
+import { Subject, takeUntil } from 'rxjs';
 import { InvestmentService } from '../../shared/services/investment.service';
 import { ContributionLimit } from '../../shared/interfaces/investment.interface';
 
@@ -38,12 +39,13 @@ interface LimitRow {
     MatIconModule
   ]
 })
-export class ContributionLimitsComponent implements OnInit {
+export class ContributionLimitsComponent implements OnInit, OnDestroy {
   accountTypes = ['RRSP', 'TFSA', 'FHSA'];
   selectedYear: number;
   years: number[];
   limitRows: LimitRow[] = [];
   private contributionLimits: ContributionLimit[] = [];
+  private destroy$ = new Subject<void>();
 
   constructor(
     private investmentService: InvestmentService
@@ -57,8 +59,29 @@ export class ContributionLimitsComponent implements OnInit {
   }
 
   ngOnInit(): void {
-    this.loadContributionLimits();
-    this.loadContributionStatus();
+    // Subscribe to contribution limits first - this will trigger loadContributionStatus when limits are loaded
+    this.investmentService.contributionLimits$.pipe(takeUntil(this.destroy$)).subscribe(limits => {
+      console.log('Contribution limits loaded:', limits);
+      this.contributionLimits = limits;
+      this.updateLimitRowsFromLimits();
+      // Load contribution status after limits are loaded so we can set limitIds
+      this.loadContributionStatus();
+    });
+    
+    // Subscribe to investment changes to reload contribution status
+    this.investmentService.investments$.pipe(takeUntil(this.destroy$)).subscribe(() => {
+      this.loadContributionStatus();
+    });
+    
+    // Subscribe to transactions changes to reload contribution status
+    this.investmentService.transactions$.pipe(takeUntil(this.destroy$)).subscribe(() => {
+      this.loadContributionStatus();
+    });
+  }
+
+  ngOnDestroy(): void {
+    this.destroy$.next();
+    this.destroy$.complete();
   }
 
   private initializeLimitRows(): void {
@@ -70,23 +93,26 @@ export class ContributionLimitsComponent implements OnInit {
     }));
   }
 
-  loadContributionLimits(): void {
-    this.investmentService.contributionLimits$.subscribe(limits => {
-      this.contributionLimits = limits;
-      this.updateLimitRowsFromLimits();
-    });
-  }
-
   loadContributionStatus(): void {
     this.investmentService.getContributionStatus(this.selectedYear)
       .subscribe(status => {
-        // Update used and remaining values from status
+        console.log('Contribution status loaded:', status);
+        // Update used values from status, but also sync limits and find limitIds
         status.forEach(s => {
           const row = this.limitRows.find(r => r.accountType === s.accountType);
           if (row) {
             row.used = s.used;
             row.limit = s.limit;
-            row.remaining = s.remaining;
+            row.remaining = s.limit > 0 ? s.limit - s.used : 0;
+            
+            // Find and set the limitId from contributionLimits
+            const existingLimit = this.contributionLimits.find(
+              l => l.year === this.selectedYear && l.accountType === s.accountType
+            );
+            if (existingLimit) {
+              row.limitId = existingLimit.id;
+              console.log(`Found limitId for ${row.accountType}:`, row.limitId);
+            }
           }
         });
       });
@@ -94,6 +120,7 @@ export class ContributionLimitsComponent implements OnInit {
 
   private updateLimitRowsFromLimits(): void {
     const yearLimits = this.contributionLimits.filter(l => l.year === this.selectedYear);
+    console.log('Updating limit rows from limits:', yearLimits);
     
     this.limitRows.forEach(row => {
       const existingLimit = yearLimits.find(l => l.accountType === row.accountType);
@@ -101,6 +128,7 @@ export class ContributionLimitsComponent implements OnInit {
         row.limit = existingLimit.limit;
         row.limitId = existingLimit.id;
         row.remaining = row.limit - row.used;
+        console.log(`Set limitId for ${row.accountType}:`, row.limitId);
       }
     });
   }
@@ -113,21 +141,26 @@ export class ContributionLimitsComponent implements OnInit {
   }
 
   onLimitChange(item: LimitRow): void {
-    const yearLimits = this.contributionLimits.filter(l => l.year === this.selectedYear);
-    const existingLimit = yearLimits.find(l => l.accountType === item.accountType);
-    
     // Update remaining value immediately
     item.remaining = item.limit - item.used;
     
-    if (existingLimit) {
-      // Update existing limit
-      this.investmentService.updateContributionLimit(existingLimit.id, {
+    console.log('onLimitChange called:', { accountType: item.accountType, limit: item.limit, limitId: item.limitId });
+    
+    if (item.limitId) {
+      // Update existing limit using the stored limitId
+      console.log('Updating existing limit with id:', item.limitId);
+      this.investmentService.updateContributionLimit(item.limitId, {
         year: this.selectedYear,
         accountType: item.accountType as 'RRSP' | 'TFSA' | 'FHSA',
         limit: item.limit
       }).subscribe({
-        next: () => {
-          console.log('Limit updated successfully');
+        next: (updatedLimit) => {
+          console.log('Limit updated successfully:', updatedLimit);
+          // Update the local contributionLimits cache
+          const index = this.contributionLimits.findIndex(l => l.id === item.limitId);
+          if (index !== -1) {
+            this.contributionLimits[index].limit = item.limit;
+          }
         },
         error: (error) => {
           console.error('Error updating limit:', error);
@@ -135,6 +168,7 @@ export class ContributionLimitsComponent implements OnInit {
       });
     } else if (item.limit > 0) {
       // Create new limit
+      console.log('Creating new limit for:', item.accountType);
       this.investmentService.addContributionLimit({
         year: this.selectedYear,
         accountType: item.accountType as 'RRSP' | 'TFSA' | 'FHSA',
@@ -142,7 +176,9 @@ export class ContributionLimitsComponent implements OnInit {
       }).subscribe({
         next: (newLimit) => {
           item.limitId = newLimit.id;
-          console.log('Limit created successfully');
+          console.log('Limit created successfully:', newLimit);
+          // Add to local contributionLimits cache
+          this.contributionLimits.push(newLimit);
         },
         error: (error) => {
           console.error('Error creating limit:', error);

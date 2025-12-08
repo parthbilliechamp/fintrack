@@ -238,6 +238,27 @@
     }
   }
 
+  .add-expense-bottom {
+    display: flex;
+    justify-content: center;
+    padding: 24px 0 8px 0;
+    border-top: 1px solid var(--border-light);
+    margin-top: 16px;
+
+    button {
+      background: #3b82f6 !important;
+      color: white !important;
+      
+      mat-icon {
+        margin-right: 8px;
+      }
+
+      &:hover {
+        background: #2563eb !important;
+      }
+    }
+  }
+
   // Responsive design
   @media (max-width: 768px) {
     padding: 10px;

@@ -149,6 +149,14 @@
           </tr>
         </table>
       </div>
+
+      <!-- Add Expense Button at Bottom -->
+      <div class="add-expense-bottom" *ngIf="expenses().length > 0">
+        <button mat-raised-button color="primary" (click)="addExpense()">
+          <mat-icon>add</mat-icon>
+          Add Expense
+        </button>
+      </div>
     </mat-card-content>
   </mat-card>
 </div>
