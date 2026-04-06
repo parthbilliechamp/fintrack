@@ -367,38 +367,15 @@ router.post('/:userId/transactions', async (req: Request, res: Response) => {
     });
     await newTransaction.save();
 
-    // Update the account's invested amount and current value (keeping growth % same)
-    const growthPercentage = investment.investedAmount > 0 
-      ? ((investment.currentValue - investment.investedAmount) / investment.investedAmount) 
-      : 0;
-    
-    const newInvestedAmount = investment.investedAmount + amount;
-    const newCurrentValue = newInvestedAmount * (1 + growthPercentage);
-    
-    logger.debug('Updating investment after transaction', {
-      accountId,
-      oldInvested: investment.investedAmount,
-      oldCurrent: investment.currentValue,
-      growthPercentage: (growthPercentage * 100).toFixed(2) + '%',
-      transactionAmount: amount,
-      newInvested: newInvestedAmount,
-      newCurrent: newCurrentValue
+    logger.info('Transaction created; investment update delegated to database trigger', {
+      userId,
+      transactionId: newTransaction._id,
+      accountId
     });
-
-    const updatedInvestment = await Investment.findByIdAndUpdate(
-      accountId,
-      {
-        investedAmount: newInvestedAmount,
-        currentValue: newCurrentValue
-      },
-      { new: true }
-    );
-
-    logger.info('Transaction created and investment updated', { userId, transactionId: newTransaction._id, accountId });
 
     res.status(201).json({
       transaction: newTransaction,
-      updatedInvestment: updatedInvestment
+      updatedInvestment: null
     });
   } catch (error) {
     logger.error('Failed to create transaction', { error: (error as Error).message });
@@ -425,6 +402,66 @@ router.delete('/:userId/transactions/:id', async (req: Request, res: Response) =
   } catch (error) {
     logger.error('Failed to delete transaction', { error: (error as Error).message });
     res.status(500).json({ error: 'Failed to delete transaction' });
+  }
+});
+
+// Update transaction
+router.put('/:userId/transactions/:id', async (req: Request, res: Response) => {
+  try {
+    const { userId, id } = req.params;
+    const { amount, date, accountId } = req.body;
+    logger.debug('Updating transaction', { userId, transactionId: id, accountId, amount });
+
+    // Validation
+    if (!amount || !date || !accountId) {
+      res.status(400).json({ error: 'Missing required fields' });
+      return;
+    }
+    if (typeof amount !== 'number' || amount === 0) {
+      res.status(400).json({ error: 'Amount must be a non-zero number' });
+      return;
+    }
+    if (typeof date !== 'string' || !date.match(/^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}(\.\d{3})?Z?$/)) {
+      res.status(400).json({ error: 'Date must be in ISO 8601 format (e.g., 2024-01-15T10:30:00Z)' });
+      return;
+    }
+    const dateObj = new Date(date);
+    if (isNaN(dateObj.getTime())) {
+      res.status(400).json({ error: 'Date is not a valid date' });
+      return;
+    }
+    if (typeof accountId !== 'string' || accountId.trim() === '') {
+      res.status(400).json({ error: 'Account ID must be a non-empty string' });
+      return;
+    }
+
+    // Verify account exists for user
+    const investment = await Investment.findOne({ _id: accountId, userId });
+    if (!investment) {
+      res.status(404).json({ error: 'Investment account not found' });
+      return;
+    }
+
+    const updatedTransaction = await InvestmentTransaction.findOneAndUpdate(
+      { _id: id, userId },
+      { amount, date: dateObj, accountId },
+      { new: true }
+    );
+
+    if (!updatedTransaction) {
+      res.status(404).json({ error: 'Transaction not found' });
+      return;
+    }
+
+    logger.info('Transaction updated; investment update delegated to database trigger', {
+      userId,
+      transactionId: id,
+      accountId
+    });
+    res.status(200).json(updatedTransaction);
+  } catch (error) {
+    logger.error('Failed to update transaction', { error: (error as Error).message });
+    res.status(500).json({ error: 'Failed to update transaction' });
   }
 });
 

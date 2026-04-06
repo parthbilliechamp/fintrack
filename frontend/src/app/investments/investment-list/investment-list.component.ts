@@ -104,6 +104,20 @@ export class InvestmentListComponent implements OnInit {
     this.router.navigate(['/investments/add-transaction']);
   }
 
+  editTransaction(transaction: InvestmentTransaction): void {
+    this.router.navigate(['/investments/edit-transaction', transaction.id]);
+  }
+
+  deleteTransaction(transaction: InvestmentTransaction): void {
+    if (confirm('Are you sure you want to delete this transaction?')) {
+      this.investmentService.deleteTransaction(transaction.id).subscribe({
+        error: (error) => {
+          console.error('Error deleting transaction:', error);
+        }
+      });
+    }
+  }
+
   editInvestment(investment: Investment): void {
     this.router.navigate(['/investments/edit', investment.id]);
   }

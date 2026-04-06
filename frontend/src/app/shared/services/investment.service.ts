@@ -275,10 +275,40 @@ export class InvestmentService {
             this.investmentsSubject.next([...investments]);
           }
         }
+
+        // Account values are updated by a DB trigger after transaction insert.
+        // Reload to sync latest investment totals in UI.
+        this.reloadData();
       }),
       map(response => response.transaction),
       catchError(error => {
         this.logger.error('Error adding transaction', error);
+        throw error;
+      })
+    );
+  }
+
+  updateTransaction(id: string, transaction: Omit<InvestmentTransaction, 'id' | 'userId'>): Observable<InvestmentTransaction> {
+    const user = this.authService.getCurrentUser();
+    if (!user) {
+      this.logger.error('Cannot update transaction: user not authenticated');
+      throw new Error('User not authenticated');
+    }
+
+    this.logger.debug('Updating transaction', { transactionId: id, accountId: transaction.accountId });
+    return this.http.put<InvestmentTransaction>(`${this.API_URL}/${user.id}/transactions/${id}`, transaction).pipe(
+      tap(updatedTransaction => {
+        this.logger.info('Transaction updated successfully', { transactionId: id });
+        const transactions = this.transactionsSubject.value;
+        const index = transactions.findIndex(t => t.id === id);
+        if (index !== -1) {
+          transactions[index] = updatedTransaction;
+          this.transactionsSubject.next([...transactions]);
+        }
+        this.reloadData();
+      }),
+      catchError(error => {
+        this.logger.error('Error updating transaction', { transactionId: id, error });
         throw error;
       })
     );
@@ -298,6 +328,7 @@ export class InvestmentService {
         const transactions = this.transactionsSubject.value;
         const filteredTransactions = transactions.filter(t => t.id !== id);
         this.transactionsSubject.next(filteredTransactions);
+        this.reloadData();
       }),
       catchError(error => {
         this.logger.error('Error deleting transaction', { transactionId: id, error });

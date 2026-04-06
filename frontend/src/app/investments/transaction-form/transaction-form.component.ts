@@ -1,7 +1,7 @@
 import { Component, OnInit } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormBuilder, FormGroup, Validators, ReactiveFormsModule } from '@angular/forms';
-import { Router, RouterModule } from '@angular/router';
+import { ActivatedRoute, Router, RouterModule } from '@angular/router';
 import { MatFormFieldModule } from '@angular/material/form-field';
 import { MatInputModule } from '@angular/material/input';
 import { MatButtonModule } from '@angular/material/button';
@@ -11,7 +11,8 @@ import { MatIconModule } from '@angular/material/icon';
 import { MatDatepickerModule } from '@angular/material/datepicker';
 import { MatNativeDateModule } from '@angular/material/core';
 import { InvestmentService } from '../../shared/services/investment.service';
-import { Investment } from '../../shared/interfaces/investment.interface';
+import { Investment, InvestmentTransaction } from '../../shared/interfaces/investment.interface';
+import { take } from 'rxjs';
 
 @Component({
   selector: 'app-transaction-form',
@@ -36,11 +37,14 @@ export class TransactionFormComponent implements OnInit {
   transactionForm: FormGroup;
   accounts: Investment[] = [];
   loading = false;
+  isEditMode = false;
+  transactionId: string | null = null;
 
   constructor(
     private fb: FormBuilder,
     private investmentService: InvestmentService,
-    private router: Router
+    private router: Router,
+    private route: ActivatedRoute
   ) {
     this.transactionForm = this.fb.group({
       accountId: ['', Validators.required],
@@ -51,11 +55,37 @@ export class TransactionFormComponent implements OnInit {
 
   ngOnInit(): void {
     this.loadAccounts();
+    this.loadTransactionForEdit();
   }
 
   loadAccounts(): void {
     this.investmentService.investments$.subscribe(investments => {
       this.accounts = investments;
+    });
+  }
+
+  loadTransactionForEdit(): void {
+    this.transactionId = this.route.snapshot.paramMap.get('id');
+    this.isEditMode = !!this.transactionId;
+    if (!this.transactionId) return;
+
+    this.investmentService.transactions$.pipe(take(1)).subscribe(transactions => {
+      const transaction = transactions.find(t => t.id === this.transactionId);
+      if (!transaction) {
+        this.investmentService.reloadData();
+        this.router.navigate(['/investments']);
+        return;
+      }
+
+      this.patchFormFromTransaction(transaction);
+    });
+  }
+
+  private patchFormFromTransaction(transaction: InvestmentTransaction): void {
+    this.transactionForm.patchValue({
+      accountId: transaction.accountId,
+      amount: transaction.amount,
+      date: new Date(transaction.date)
     });
   }
 
@@ -67,18 +97,22 @@ export class TransactionFormComponent implements OnInit {
       // Convert date to ISO string
       const isoDate = new Date(date).toISOString();
       
-      this.investmentService.addTransaction({
+      const payload = {
         accountId,
         amount: Number(amount),
         date: isoDate
-      }).subscribe({
+      };
+
+      const request$ = this.isEditMode && this.transactionId
+        ? this.investmentService.updateTransaction(this.transactionId, payload)
+        : this.investmentService.addTransaction(payload);
+
+      request$.subscribe({
         next: () => {
-          // Reload investments to get updated values
-          this.investmentService.reloadData();
           this.router.navigate(['/investments']);
         },
         error: (error) => {
-          console.error('Error adding transaction:', error);
+          console.error(`Error ${this.isEditMode ? 'updating' : 'adding'} transaction:`, error);
           this.loading = false;
         }
       });

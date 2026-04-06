@@ -191,12 +191,21 @@
                     <tr>
                       <th>Date</th>
                       <th class="text-right">Amount</th>
+                      <th class="text-right">Actions</th>
                     </tr>
                   </thead>
                   <tbody>
                     <tr *ngFor="let transaction of getTransactionsForAccount(investment.id)">
                       <td>{{ formatDate(transaction.date) }}</td>
                       <td class="text-right amount positive">{{ formatCurrency(transaction.amount) }}</td>
+                      <td class="text-right">
+                        <button mat-icon-button (click)="editTransaction(transaction)" aria-label="Edit transaction">
+                          <mat-icon>edit</mat-icon>
+                        </button>
+                        <button mat-icon-button color="warn" (click)="deleteTransaction(transaction)" aria-label="Delete transaction">
+                          <mat-icon>delete</mat-icon>
+                        </button>
+                      </td>
                     </tr>
                   </tbody>
                 </table>

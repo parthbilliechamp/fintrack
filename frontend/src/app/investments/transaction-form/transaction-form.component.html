@@ -1,8 +1,10 @@
 <div class="transaction-form-container">
   <!-- Page Header -->
   <div class="page-header">
-    <h2>Add Investment Transaction</h2>
-    <p class="subtitle">Record a new contribution to your investment account</p>
+    <h2>{{ isEditMode ? 'Edit Investment Transaction' : 'Add Investment Transaction' }}</h2>
+    <p class="subtitle">
+      {{ isEditMode ? 'Update an existing transaction' : 'Record a new contribution to your investment account' }}
+    </p>
   </div>
 
   <!-- Back Button -->
@@ -58,7 +60,7 @@
           <button mat-button type="button" (click)="cancel()">Cancel</button>
           <button mat-raised-button color="primary" type="submit" 
                   [disabled]="transactionForm.invalid || loading">
-            {{ loading ? 'Adding...' : 'Add Transaction' }}
+            {{ loading ? (isEditMode ? 'Updating...' : 'Adding...') : (isEditMode ? 'Update Transaction' : 'Add Transaction') }}
           </button>
         </div>
       </form>

@@ -5,7 +5,7 @@ import { MatCardModule } from '@angular/material/card';
 import { MatIconModule } from '@angular/material/icon';
 import { MatButtonModule } from '@angular/material/button';
 import { MatProgressSpinnerModule } from '@angular/material/progress-spinner';
-import { Subject, takeUntil, combineLatest, map } from 'rxjs';
+import { Subject, takeUntil, combineLatest, map, interval, startWith } from 'rxjs';
 import { AuthService } from '../../shared/services/auth.service';
 import { ExpenseService } from '../../shared/services/expense.service';
 import { InvestmentService } from '../../shared/services/investment.service';
@@ -50,6 +50,11 @@ export class OverviewComponent implements OnInit, OnDestroy {
   ) {}
 
   ngOnInit(): void {
+    interval(15000).pipe(
+      startWith(0),
+      takeUntil(this.destroy$)
+    ).subscribe(() => this.investmentService.reloadData());
+
     this.loadOverviewData();
   }
 
@@ -82,7 +87,8 @@ export class OverviewComponent implements OnInit, OnDestroy {
         // Calculate total investments (current value)
         const totalInvestmentsValue = investments.reduce((sum, inv) => sum + inv.currentValue, 0);
         
-        // Net worth = Total Assets (investments) - we don't have liabilities tracked
+        // Net worth is derived from current account values to avoid counting
+        // transactions twice when account values are already updated.
         const netWorth = totalInvestmentsValue;
 
         return {
