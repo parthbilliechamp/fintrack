@@ -47,12 +47,22 @@
     }
 
     .year-select {
-      width: 140px;
+      width: 108px;
       margin: 0;
-      
-      ::ng-deep .mat-mdc-text-field-wrapper {
-        background: var(--surface);
-        border-radius: var(--radius-md);
+
+      ::ng-deep {
+        .mat-mdc-text-field-wrapper {
+          background: var(--surface);
+          border-radius: var(--radius-md);
+        }
+        .mat-mdc-form-field-flex {
+          align-items: center;
+        }
+        .mat-mdc-form-field-infix {
+          min-height: 0;
+          padding-top: 10px !important;
+          padding-bottom: 10px !important;
+        }
       }
     }
 
@@ -466,7 +476,7 @@
       }
 
       button {
-        background: var(--primary-900) !important;
+        background: var(--primary) !important;
         color: var(--text-inverse) !important;
         
         mat-icon {

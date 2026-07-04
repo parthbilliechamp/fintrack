@@ -1,0 +1,461 @@
+<div class="plan-container page-container">
+  <header class="page-header">
+    <div>
+      <h1>Budget Planner</h1>
+      <p class="header-subtitle">Salary, investment &amp; expense breakdown — all figures shown biweekly</p>
+    </div>
+  </header>
+
+  <div class="loading-container" *ngIf="loading">
+    <mat-spinner diameter="40"></mat-spinner>
+  </div>
+
+  <div class="empty-state" *ngIf="!loading && !plan">
+    <mat-icon>error_outline</mat-icon>
+    <p>Financial plan data is not available.</p>
+  </div>
+
+  <ng-container *ngIf="!loading && plan">
+    <div class="error-banner" *ngIf="errorMessage">
+      <mat-icon>error_outline</mat-icon>
+      <span>{{ errorMessage }}</span>
+      <button mat-icon-button (click)="dismissError()"><mat-icon>close</mat-icon></button>
+    </div>
+
+    <!-- Biweekly headline summary -->
+    <div class="summary-grid">
+      <mat-card class="stat-card income">
+        <mat-card-content>
+          <div class="stat-icon"><mat-icon>payments</mat-icon></div>
+          <div class="stat-details">
+            <span class="stat-label">Biweekly Income (after tax)</span>
+            <span class="stat-value">{{ formatCurrency(biweeklyIncome) }}</span>
+            <span class="stat-sublabel">{{ formatCurrency(monthlyIncome) }} / month</span>
+          </div>
+        </mat-card-content>
+      </mat-card>
+
+      <mat-card class="stat-card invest">
+        <mat-card-content>
+          <div class="stat-icon"><mat-icon>trending_up</mat-icon></div>
+          <div class="stat-details">
+            <span class="stat-label">Biweekly Investments</span>
+            <span class="stat-value">{{ formatCurrency(biweeklyInvestments) }}</span>
+            <span class="stat-sublabel">{{ formatCurrency(monthlyInvestmentsTotal) }} / month</span>
+          </div>
+        </mat-card-content>
+      </mat-card>
+
+      <mat-card class="stat-card etf">
+        <mat-card-content>
+          <div class="stat-icon"><mat-icon>donut_large</mat-icon></div>
+          <div class="stat-details">
+            <span class="stat-label">Biweekly ETF Buys</span>
+            <span class="stat-value">{{ formatCurrency(biweeklyEtf) }}</span>
+            <span class="stat-sublabel">{{ formatCurrency(monthlyEtfTotal) }} / month</span>
+          </div>
+        </mat-card-content>
+      </mat-card>
+
+      <mat-card class="stat-card expense">
+        <mat-card-content>
+          <div class="stat-icon"><mat-icon>receipt_long</mat-icon></div>
+          <div class="stat-details">
+            <span class="stat-label">Biweekly Expenses</span>
+            <span class="stat-value">{{ formatCurrency(biweeklyExpenses) }}</span>
+            <span class="stat-sublabel">{{ formatCurrency(monthlyExpensesTotal) }} / month</span>
+          </div>
+        </mat-card-content>
+      </mat-card>
+    </div>
+
+    <!-- Cash-flow ratio bar -->
+    <div class="flow-summary" *ngIf="biweeklyIncome > 0">
+      <div class="flow-header">
+        <span class="flow-title">Where each biweekly paycheck goes</span>
+        <span class="flow-remaining" [class.negative]="paycheckRemaining < 0">
+          {{ paycheckRemaining >= 0 ? 'Unallocated' : 'Over budget' }}: {{ formatCurrency(paycheckRemaining) }}
+        </span>
+      </div>
+      <div class="flow-bar">
+        <div class="flow-seg invest" [style.width.%]="flowPercent(biweeklyInvestments)" [matTooltip]="'Investments · ' + formatCurrency(biweeklyInvestments)"></div>
+        <div class="flow-seg etf" [style.width.%]="flowPercent(biweeklyEtf)" [matTooltip]="'ETF buys · ' + formatCurrency(biweeklyEtf)"></div>
+        <div class="flow-seg expense" [style.width.%]="flowPercent(biweeklyExpenses)" [matTooltip]="'Expenses · ' + formatCurrency(biweeklyExpenses)"></div>
+      </div>
+      <div class="flow-legend">
+        <span class="legend-item"><i class="dot invest"></i>Investments</span>
+        <span class="legend-item"><i class="dot etf"></i>ETF buys</span>
+        <span class="legend-item"><i class="dot expense"></i>Expenses</span>
+        <span class="legend-item"><i class="dot remaining"></i>Unallocated</span>
+      </div>
+    </div>
+
+    <!-- Tab navigation -->
+    <div class="tab-navigation">
+      <button class="tab-item" [class.active]="activeTab === 'salary'" (click)="setActiveTab('salary')">
+        Salary
+      </button>
+      <button class="tab-item" [class.active]="activeTab === 'investments'" (click)="setActiveTab('investments')">
+        Investments
+      </button>
+      <button class="tab-item" [class.active]="activeTab === 'etf'" (click)="setActiveTab('etf')">
+        ETF Allocation
+      </button>
+      <button class="tab-item" [class.active]="activeTab === 'expenses'" (click)="setActiveTab('expenses')">
+        Expenses
+      </button>
+    </div>
+
+    <!-- Content: tables -->
+    <div class="content-grid">
+      <div class="table-column">
+        <!-- Salary breakdown -->
+        <mat-card class="data-table-card plan-card plan-card--salary" *ngIf="activeTab === 'salary'">
+          <mat-card-header>
+            <div class="card-title-icon"><mat-icon>payments</mat-icon></div>
+            <div>
+              <mat-card-title>Paycheck Allocation Plan</mat-card-title>
+              <mat-card-subtitle>How each biweekly paycheck is split across savings, investments, and spending</mat-card-subtitle>
+            </div>
+          </mat-card-header>
+          <mat-card-content>
+            <div class="table-responsive">
+              <table class="data-table editable-table plan-table plan-table--salary">
+                <thead>
+                  <tr>
+                    <th>Allocation</th>
+                    <th class="text-right">Biweekly</th>
+                    <th class="text-right">Monthly</th>
+                    <th class="text-right">% of Income</th>
+                    <th class="text-right actions-col">Actions</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  <tr>
+                    <td>
+                      <div class="row-label-cell">
+                        <span class="row-icon-chip chip-emerald"><mat-icon>account_balance_wallet</mat-icon></span>
+                        <strong>Income after tax</strong>
+                      </div>
+                    </td>
+                    <td class="text-right" *ngIf="!editingIncome"><strong>{{ formatCurrency(biweeklyIncome) }}</strong></td>
+                    <td class="text-right" *ngIf="editingIncome">
+                      <input type="number" class="inline-input text-right" [(ngModel)]="incomeDraft" min="0" step="1" name="incomeDraft" />
+                    </td>
+                    <td class="text-right"><strong>{{ formatCurrency(monthlyIncome) }}</strong></td>
+                    <td class="text-right"><strong>100%</strong></td>
+                    <td class="text-right actions-col">
+                      <ng-container *ngIf="!editingIncome">
+                        <button mat-icon-button (click)="startEditIncome()" title="Edit income"><mat-icon>edit</mat-icon></button>
+                      </ng-container>
+                      <ng-container *ngIf="editingIncome">
+                        <button mat-icon-button (click)="saveIncome()" [disabled]="saving" title="Save"><mat-icon>check</mat-icon></button>
+                        <button mat-icon-button (click)="cancelEditIncome()" title="Cancel"><mat-icon>close</mat-icon></button>
+                      </ng-container>
+                    </td>
+                  </tr>
+                  <tr *ngFor="let row of salaryRows">
+                    <td>
+                      <div class="row-label-cell">
+                        <span class="row-icon-chip" [ngClass]="getSalaryIconClass(row.label)">
+                          <mat-icon>{{ getSalaryIcon(row.label) }}</mat-icon>
+                        </span>
+                        <span class="row-label-text" *ngIf="!(isEditing(row.id) && editingSection === 'salaryBreakdown')">{{ row.label }}</span>
+                        <input *ngIf="isEditing(row.id) && editingSection === 'salaryBreakdown'" type="text" class="inline-input" [(ngModel)]="editDraft.label" name="editLabel-{{row.id}}" />
+                      </div>
+                    </td>
+                    <td class="text-right">
+                      <span *ngIf="!(isEditing(row.id) && editingSection === 'salaryBreakdown')">{{ formatCurrency(row.biweekly) }}</span>
+                      <input *ngIf="isEditing(row.id) && editingSection === 'salaryBreakdown'" type="number" class="inline-input text-right" [(ngModel)]="editDraft.amount" min="0" name="editAmount-{{row.id}}" />
+                    </td>
+                    <td class="text-right">{{ formatCurrency(row.monthly) }}</td>
+                    <td class="text-right"><span class="share-badge">{{ formatPercent(row.percent) }}</span></td>
+                    <td class="text-right actions-col">
+                      <ng-container *ngIf="!(isEditing(row.id) && editingSection === 'salaryBreakdown')">
+                        <button mat-icon-button (click)="startEdit('salaryBreakdown', row, { label: row.label, amount: row.biweekly })" title="Edit"><mat-icon>edit</mat-icon></button>
+                        <button mat-icon-button (click)="deleteRow('salaryBreakdown', row)" title="Delete"><mat-icon>delete</mat-icon></button>
+                      </ng-container>
+                      <ng-container *ngIf="isEditing(row.id) && editingSection === 'salaryBreakdown'">
+                        <button mat-icon-button (click)="saveEdit()" [disabled]="saving" title="Save"><mat-icon>check</mat-icon></button>
+                        <button mat-icon-button (click)="cancelEdit()" title="Cancel"><mat-icon>close</mat-icon></button>
+                      </ng-container>
+                    </td>
+                  </tr>
+                  <tr class="add-row">
+                    <td><input type="text" class="inline-input" placeholder="New allocation label" [(ngModel)]="newSalaryRow.label" name="newSalaryLabel" /></td>
+                    <td class="text-right"><input type="number" class="inline-input text-right" placeholder="Amount" [(ngModel)]="newSalaryRow.amount" min="0" name="newSalaryAmount" /></td>
+                    <td class="text-right">—</td>
+                    <td class="text-right">—</td>
+                    <td class="text-right actions-col">
+                      <button mat-icon-button color="primary" (click)="addSalaryRow()" [disabled]="saving" title="Add row"><mat-icon>add_circle</mat-icon></button>
+                    </td>
+                  </tr>
+                </tbody>
+                <tfoot>
+                  <tr>
+                    <td>Total allocated</td>
+                    <td class="text-right">{{ formatCurrency(biweeklySalaryAllocated) }}</td>
+                    <td class="text-right">{{ formatCurrency(biweeklySalaryAllocated * 2) }}</td>
+                    <td class="text-right">{{ formatPercent(biweeklyIncome > 0 ? (biweeklySalaryAllocated / biweeklyIncome) * 100 : 0) }}</td>
+                    <td class="text-right actions-col"></td>
+                  </tr>
+                </tfoot>
+              </table>
+            </div>
+          </mat-card-content>
+        </mat-card>
+
+        <!-- Investment breakdown -->
+        <mat-card class="data-table-card plan-card plan-card--invest" *ngIf="activeTab === 'investments'">
+          <mat-card-header>
+            <div class="card-title-icon"><mat-icon>trending_up</mat-icon></div>
+            <div>
+              <mat-card-title>Monthly Investment Contributions</mat-card-title>
+              <mat-card-subtitle>Personal and employer contributions by account — sub-rows show what RBC invests on your behalf</mat-card-subtitle>
+            </div>
+          </mat-card-header>
+          <mat-card-content>
+            <div class="section-note invest-note">
+              <mat-icon>info_outline</mat-icon>
+              <span>Category totals are your planned contributions. Account-level amounts (employer, DPSP, contributor) reflect what RBC invests and don't need to add up to the category total.</span>
+            </div>
+            <div class="table-responsive">
+              <table class="data-table editable-table plan-table plan-table--invest">
+                <thead>
+                  <tr>
+                    <th>Investment</th>
+                    <th class="text-right">Biweekly</th>
+                    <th class="text-right">Monthly</th>
+                    <th class="text-right">Share</th>
+                    <th class="text-right actions-col">Actions</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  <tr *ngFor="let row of investmentRows" [ngClass]="investmentRowClass(row)">
+                    <td [class.row-category]="row.rowType === 'category'" [class.row-subcategory]="row.rowType === 'subcategory'" [class.row-account]="row.rowType === 'account'">
+                      <div class="row-label-cell" [class.row-label-cell--account]="row.rowType === 'account'">
+                        <span class="row-icon-chip" [ngClass]="getInvestmentIconClass(row)">
+                          <mat-icon>{{ getInvestmentIcon(row) }}</mat-icon>
+                        </span>
+                        <span class="row-label-text">
+                          <span *ngIf="!(isEditing(row.id) && editingSection === 'monthlyInvestments')">{{ row.label }}</span>
+                          <input *ngIf="isEditing(row.id) && editingSection === 'monthlyInvestments'" type="text" class="inline-input" [(ngModel)]="editDraft.label" name="editInvLabel-{{row.id}}" />
+                          <span class="contrib-badge" *ngIf="getContributionBadge(row.contributionSource) as badge" [ngClass]="badge.cssClass">{{ badge.label }}</span>
+                        </span>
+                      </div>
+                    </td>
+                    <td class="text-right">
+                      <span *ngIf="investmentShowsAmount(row)">{{ formatCurrency(row.biweekly) }}</span>
+                      <span *ngIf="!investmentShowsAmount(row)">—</span>
+                    </td>
+                    <td class="text-right">
+                      <span *ngIf="investmentShowsAmount(row) && !(isEditing(row.id) && editingSection === 'monthlyInvestments')">{{ formatCurrency(row.monthly) }}</span>
+                      <input *ngIf="investmentIsEditable(row) && isEditing(row.id) && editingSection === 'monthlyInvestments'" type="number" class="inline-input text-right" [(ngModel)]="editDraft.monthlyAmount" min="0" name="editInvAmount-{{row.id}}" />
+                      <span *ngIf="!investmentShowsAmount(row)">—</span>
+                    </td>
+                    <td class="text-right">
+                      <span class="share-badge" *ngIf="row.rowType === 'category' && row.percent > 0">{{ formatPercent(row.percent) }}</span>
+                      <span *ngIf="row.rowType !== 'category'">—</span>
+                    </td>
+                    <td class="text-right actions-col">
+                      <ng-container *ngIf="investmentIsEditable(row)">
+                        <ng-container *ngIf="!(isEditing(row.id) && editingSection === 'monthlyInvestments')">
+                          <button mat-icon-button (click)="startEdit('monthlyInvestments', row, { label: row.label, monthlyAmount: row.monthly })" title="Edit"><mat-icon>edit</mat-icon></button>
+                          <button mat-icon-button (click)="deleteRow('monthlyInvestments', row)" title="Delete" *ngIf="row.rowType === 'category'"><mat-icon>delete</mat-icon></button>
+                        </ng-container>
+                        <ng-container *ngIf="isEditing(row.id) && editingSection === 'monthlyInvestments'">
+                          <button mat-icon-button (click)="saveEdit()" [disabled]="saving" title="Save"><mat-icon>check</mat-icon></button>
+                          <button mat-icon-button (click)="cancelEdit()" title="Cancel"><mat-icon>close</mat-icon></button>
+                        </ng-container>
+                      </ng-container>
+                    </td>
+                  </tr>
+                  <tr class="add-row">
+                    <td><input type="text" class="inline-input" placeholder="New investment label" [(ngModel)]="newInvestmentRow.label" name="newInvLabel" /></td>
+                    <td class="text-right">—</td>
+                    <td class="text-right"><input type="number" class="inline-input text-right" placeholder="Monthly amount" [(ngModel)]="newInvestmentRow.monthlyAmount" min="0" name="newInvAmount" /></td>
+                    <td class="text-right">—</td>
+                    <td class="text-right actions-col">
+                      <button mat-icon-button color="primary" (click)="addInvestmentRow()" [disabled]="saving" title="Add row"><mat-icon>add_circle</mat-icon></button>
+                    </td>
+                  </tr>
+                </tbody>
+                <tfoot>
+                  <tr>
+                    <td>Total</td>
+                    <td class="text-right">{{ formatCurrency(biweeklyInvestments) }}</td>
+                    <td class="text-right">{{ formatCurrency(monthlyInvestmentsTotal) }}</td>
+                    <td class="text-right">100%</td>
+                    <td class="text-right actions-col"></td>
+                  </tr>
+                </tfoot>
+              </table>
+            </div>
+          </mat-card-content>
+        </mat-card>
+
+        <!-- ETF allocation -->
+        <mat-card class="data-table-card plan-card plan-card--etf" *ngIf="activeTab === 'etf'">
+          <mat-card-header>
+            <div class="card-title-icon"><mat-icon>donut_large</mat-icon></div>
+            <div>
+              <mat-card-title>ETF &amp; Fund Allocation</mat-card-title>
+              <mat-card-subtitle>How investment dollars are distributed across funds, grouped by account</mat-card-subtitle>
+            </div>
+          </mat-card-header>
+          <mat-card-content>
+            <div class="table-responsive">
+              <table class="data-table editable-table plan-table plan-table--etf">
+                <thead>
+                  <tr>
+                    <th>Account</th>
+                    <th>ETF / Fund</th>
+                    <th class="text-right">Biweekly</th>
+                    <th class="text-right">Monthly</th>
+                    <th class="text-right">Share</th>
+                    <th class="text-right actions-col">Actions</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  <tr *ngFor="let row of etfRows" [class.row-group]="row.isGroup" [class.row-etf]="!row.isGroup">
+                    <td class="account-cell">
+                      <div class="row-label-cell" *ngIf="row.isGroup">
+                        <span class="row-icon-chip" [ngClass]="getEtfIconClass(row)">
+                          <mat-icon>{{ getEtfIcon(row) }}</mat-icon>
+                        </span>
+                        <strong>{{ row.label }}</strong>
+                      </div>
+                      <span class="account-badge" *ngIf="!row.isGroup">{{ row.accountCategory }}<span *ngIf="row.accountSubCategory"> · {{ row.accountSubCategory }}</span></span>
+                    </td>
+                    <td>
+                      <div class="row-label-cell">
+                        <span class="row-icon-chip" *ngIf="!row.isGroup" [ngClass]="getEtfIconClass(row)">
+                          <mat-icon>{{ getEtfIcon(row) }}</mat-icon>
+                        </span>
+                        <span class="ticker" *ngIf="!row.isGroup && !(isEditing(row.id) && editingSection === 'etfAllocation')">{{ row.label }}</span>
+                        <input *ngIf="!row.isGroup && isEditing(row.id) && editingSection === 'etfAllocation'" type="text" class="inline-input" [(ngModel)]="editDraft.ticker" name="editEtfTicker-{{row.id}}" />
+                      </div>
+                    </td>
+                    <td class="text-right">{{ formatCurrencyPreciseOrDash(row.biweekly, row.isGroup) }}</td>
+                    <td class="text-right">
+                      <span *ngIf="!row.isGroup && !(isEditing(row.id) && editingSection === 'etfAllocation')">{{ formatCurrencyPrecise(row.monthly) }}</span>
+                      <input *ngIf="!row.isGroup && isEditing(row.id) && editingSection === 'etfAllocation'" type="number" class="inline-input text-right" [(ngModel)]="editDraft.biweeklyAmount" min="0" step="0.01" name="editEtfBiweekly-{{row.id}}" />
+                      <span *ngIf="row.isGroup">—</span>
+                    </td>
+                    <td class="text-right">
+                      <span class="share-badge" *ngIf="!row.isGroup && row.percent > 0">{{ formatPercent(row.percent) }}</span>
+                      <span *ngIf="row.isGroup">—</span>
+                    </td>
+                    <td class="text-right actions-col">
+                      <ng-container *ngIf="!row.isGroup">
+                        <ng-container *ngIf="!(isEditing(row.id) && editingSection === 'etfAllocation')">
+                          <button mat-icon-button (click)="startEdit('etfAllocation', row, { ticker: row.label, targetPercent: row.targetPercent, biweeklyAmount: row.biweekly, monthlyAmount: row.monthly })" title="Edit"><mat-icon>edit</mat-icon></button>
+                          <button mat-icon-button (click)="deleteRow('etfAllocation', row)" title="Delete"><mat-icon>delete</mat-icon></button>
+                        </ng-container>
+                        <ng-container *ngIf="isEditing(row.id) && editingSection === 'etfAllocation'">
+                          <button mat-icon-button (click)="saveEdit()" [disabled]="saving" title="Save"><mat-icon>check</mat-icon></button>
+                          <button mat-icon-button (click)="cancelEdit()" title="Cancel"><mat-icon>close</mat-icon></button>
+                        </ng-container>
+                      </ng-container>
+                    </td>
+                  </tr>
+                  <tr class="add-row">
+                    <td><input type="text" class="inline-input" placeholder="Ticker" [(ngModel)]="newEtfRow.ticker" name="newEtfTicker" /></td>
+                    <td class="text-right"><input type="number" class="inline-input text-right" placeholder="Target %" [(ngModel)]="newEtfRow.targetPercent" min="0" max="100" name="newEtfTarget" /></td>
+                    <td class="text-right">—</td>
+                    <td class="text-right"><input type="number" class="inline-input text-right" placeholder="Monthly amount" [(ngModel)]="newEtfRow.monthlyAmount" min="0" name="newEtfAmount" /></td>
+                    <td class="text-right actions-col">
+                      <button mat-icon-button color="primary" (click)="addEtfRow()" [disabled]="saving" title="Add row"><mat-icon>add_circle</mat-icon></button>
+                    </td>
+                  </tr>
+                </tbody>
+                <tfoot>
+                  <tr>
+                    <td colspan="2">Total</td>
+                    <td class="text-right">{{ formatCurrencyPrecise(biweeklyEtf) }}</td>
+                    <td class="text-right">{{ formatCurrency(monthlyEtfTotal) }}</td>
+                    <td class="text-right">100%</td>
+                    <td class="text-right actions-col"></td>
+                  </tr>
+                </tfoot>
+              </table>
+            </div>
+          </mat-card-content>
+        </mat-card>
+
+        <!-- Expense breakdown -->
+        <mat-card class="data-table-card plan-card plan-card--expense" *ngIf="activeTab === 'expenses'">
+          <mat-card-header>
+            <div class="card-title-icon"><mat-icon>receipt_long</mat-icon></div>
+            <div>
+              <mat-card-title>Fixed Monthly Expenses</mat-card-title>
+              <mat-card-subtitle>Recurring bills and subscriptions — shown biweekly for paycheck planning</mat-card-subtitle>
+            </div>
+          </mat-card-header>
+          <mat-card-content>
+            <div class="table-responsive">
+              <table class="data-table editable-table plan-table plan-table--expense">
+                <thead>
+                  <tr>
+                    <th>Expense</th>
+                    <th class="text-right">Biweekly</th>
+                    <th class="text-right">Monthly</th>
+                    <th class="text-right">Share</th>
+                    <th class="text-right actions-col">Actions</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  <tr *ngFor="let row of expenseRows">
+                    <td>
+                      <div class="row-label-cell">
+                        <span class="row-icon-chip" [ngClass]="getExpenseIconClass(row.label)">
+                          <mat-icon>{{ getExpenseIcon(row.label) }}</mat-icon>
+                        </span>
+                        <span class="row-label-text" *ngIf="!(isEditing(row.id) && editingSection === 'monthlyExpenses')">{{ row.label }}</span>
+                        <input *ngIf="isEditing(row.id) && editingSection === 'monthlyExpenses'" type="text" class="inline-input" [(ngModel)]="editDraft.label" name="editExpLabel-{{row.id}}" />
+                      </div>
+                    </td>
+                    <td class="text-right">{{ formatCurrency(row.biweekly) }}</td>
+                    <td class="text-right">
+                      <span *ngIf="!(isEditing(row.id) && editingSection === 'monthlyExpenses')">{{ formatCurrency(row.monthly) }}</span>
+                      <input *ngIf="isEditing(row.id) && editingSection === 'monthlyExpenses'" type="number" class="inline-input text-right" [(ngModel)]="editDraft.monthlyAmount" min="0" name="editExpAmount-{{row.id}}" />
+                    </td>
+                    <td class="text-right"><span class="share-badge">{{ formatPercent(row.percent) }}</span></td>
+                    <td class="text-right actions-col">
+                      <ng-container *ngIf="!(isEditing(row.id) && editingSection === 'monthlyExpenses')">
+                        <button mat-icon-button (click)="startEdit('monthlyExpenses', row, { label: row.label, monthlyAmount: row.monthly })" title="Edit"><mat-icon>edit</mat-icon></button>
+                        <button mat-icon-button (click)="deleteRow('monthlyExpenses', row)" title="Delete"><mat-icon>delete</mat-icon></button>
+                      </ng-container>
+                      <ng-container *ngIf="isEditing(row.id) && editingSection === 'monthlyExpenses'">
+                        <button mat-icon-button (click)="saveEdit()" [disabled]="saving" title="Save"><mat-icon>check</mat-icon></button>
+                        <button mat-icon-button (click)="cancelEdit()" title="Cancel"><mat-icon>close</mat-icon></button>
+                      </ng-container>
+                    </td>
+                  </tr>
+                  <tr class="add-row">
+                    <td><input type="text" class="inline-input" placeholder="New expense label" [(ngModel)]="newExpenseRow.label" name="newExpLabel" /></td>
+                    <td class="text-right">—</td>
+                    <td class="text-right"><input type="number" class="inline-input text-right" placeholder="Monthly amount" [(ngModel)]="newExpenseRow.monthlyAmount" min="0" name="newExpAmount" /></td>
+                    <td class="text-right">—</td>
+                    <td class="text-right actions-col">
+                      <button mat-icon-button color="primary" (click)="addExpenseRow()" [disabled]="saving" title="Add row"><mat-icon>add_circle</mat-icon></button>
+                    </td>
+                  </tr>
+                </tbody>
+                <tfoot>
+                  <tr>
+                    <td>Total</td>
+                    <td class="text-right">{{ formatCurrency(biweeklyExpenses) }}</td>
+                    <td class="text-right">{{ formatCurrency(monthlyExpensesTotal) }}</td>
+                    <td class="text-right">100%</td>
+                    <td class="text-right actions-col"></td>
+                  </tr>
+                </tfoot>
+              </table>
+            </div>
+          </mat-card-content>
+        </mat-card>
+      </div>
+    </div>
+  </ng-container>
+</div>

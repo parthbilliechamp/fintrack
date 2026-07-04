@@ -3,6 +3,7 @@ import express, { Express, Request, Response } from 'express';
 import cors from 'cors';
 import logger, { requestLogger, errorLogger } from './logger';
 import { connectDatabase, disconnectDatabase } from './database/connection';
+import { seedFinancialPlan, repairFinancialPlanRowIds } from './database/seed-financial-plan';
 
 const app: Express = express();
 const PORT = process.env.PORT || 3000;
@@ -16,11 +17,13 @@ app.use(requestLogger); // Add request logging middleware
 import authRoutes from './routes/auth';
 import expenseRoutes from './routes/expenses';
 import investmentRoutes from './routes/investments';
+import financialPlanRoutes from './routes/financialPlan';
 
 // Routes
 app.use('/api/auth', authRoutes);
 app.use('/api/expenses', expenseRoutes);
 app.use('/api/investments', investmentRoutes);
+app.use('/api/financial-plan', financialPlanRoutes);
 
 // Health check endpoint
 app.get('/api/health', (_req: Request, res: Response) => {
@@ -47,7 +50,12 @@ const startServer = async () => {
   try {
     // Connect to MongoDB
     await connectDatabase();
-    
+
+    // Seed static reference data (idempotent) and repair any legacy rows
+    // that predate row-level ids (see repairFinancialPlanRowIds for why).
+    await seedFinancialPlan();
+    await repairFinancialPlanRowIds();
+
     // Start Express server
     const server = app.listen(PORT, () => {
       logger.info(`Server started`, { port: PORT, url: `http://localhost:${PORT}` });

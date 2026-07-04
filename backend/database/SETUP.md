@@ -115,26 +115,13 @@ This script will:
   userId: String,        // Reference to users._id
   accountName: String,
   accountType: String,   // Enum: 'RRSP', 'TFSA', 'FHSA', 'Savings'
-  investedAmount: Number, // >= 0
-  currentValue: Number,   // >= 0
+  investedAmount: Number, // >= 0, total invested till date
+  currentValue: Number,   // >= 0, total current value till date
+  yearInvestedAmount: Number, // >= 0, invested during current year
   createdAt: Date,
   updatedAt: Date
 }
 // Indexes: userId, userId+accountType
-```
-
-### InvestmentTransactions Collection
-```javascript
-{
-  _id: String,
-  userId: String,        // Reference to users._id
-  amount: Number,        // != 0
-  date: Date,
-  accountId: String,     // Reference to investments._id
-  createdAt: Date,
-  updatedAt: Date
-}
-// Indexes: userId, userId+date, accountId+date, userId+accountId
 ```
 
 ### ContributionLimits Collection
@@ -199,30 +186,15 @@ db.createCollection("investments", {
   validator: {
     $jsonSchema: {
       bsonType: "object",
-      required: ["_id", "userId", "accountName", "accountType", "investedAmount", "currentValue"],
+      required: ["_id", "userId", "accountName", "accountType", "investedAmount", "currentValue", "yearInvestedAmount"],
       properties: {
         _id: { bsonType: "string" },
         userId: { bsonType: "string" },
         accountName: { bsonType: "string" },
         accountType: { enum: ["RRSP", "TFSA", "FHSA", "Savings"] },
         investedAmount: { bsonType: "number", minimum: 0 },
-        currentValue: { bsonType: "number", minimum: 0 }
-      }
-    }
-  }
-});
-
-db.createCollection("investmenttransactions", {
-  validator: {
-    $jsonSchema: {
-      bsonType: "object",
-      required: ["_id", "userId", "amount", "date", "accountId"],
-      properties: {
-        _id: { bsonType: "string" },
-        userId: { bsonType: "string" },
-        amount: { bsonType: "number" },
-        date: { bsonType: "date" },
-        accountId: { bsonType: "string" }
+        currentValue: { bsonType: "number", minimum: 0 },
+        yearInvestedAmount: { bsonType: "number", minimum: 0 }
       }
     }
   }
@@ -251,10 +223,6 @@ db.expenses.createIndex({ userId: 1, date: -1 });
 db.expenses.createIndex({ userId: 1, category: 1 });
 db.investments.createIndex({ userId: 1 });
 db.investments.createIndex({ userId: 1, accountType: 1 });
-db.investmenttransactions.createIndex({ userId: 1 });
-db.investmenttransactions.createIndex({ userId: 1, date: -1 });
-db.investmenttransactions.createIndex({ accountId: 1, date: -1 });
-db.investmenttransactions.createIndex({ userId: 1, accountId: 1 });
 db.contributionlimits.createIndex({ userId: 1, year: 1 });
 db.contributionlimits.createIndex({ userId: 1, year: 1, accountType: 1 }, { unique: true });
 

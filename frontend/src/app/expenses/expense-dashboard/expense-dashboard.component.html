@@ -13,7 +13,7 @@
         <mat-icon>bar_chart</mat-icon>
         History
       </button>
-      <mat-form-field appearance="outline" class="year-select">
+      <mat-form-field appearance="outline" class="year-select" subscriptSizing="dynamic">
         <mat-label>Year</mat-label>
         <mat-select [(ngModel)]="selectedYear" (selectionChange)="onYearChange()">
           <mat-option *ngFor="let year of years" [value]="year">
@@ -31,6 +31,20 @@
   </div>
 
   <div class="dashboard-content" *ngIf="!loading()">
+    <!-- Empty State -->
+    <mat-card class="empty-state" *ngIf="!summary() || summary()!.count === 0">
+      <mat-card-content>
+        <mat-icon>info</mat-icon>
+        <h3>No Expenses Found</h3>
+        <p>Start tracking your expenses to see analytics here.</p>
+        <button mat-raised-button color="primary" routerLink="/expenses/new">
+          <mat-icon>add</mat-icon>
+          <span>Add Your First Expense</span>
+        </button>
+      </mat-card-content>
+    </mat-card>
+
+    <ng-container *ngIf="summary() && summary()!.count > 0">
     <!-- Summary Cards -->
     <div class="stats-grid">
       <mat-card class="stat-card total-expenses">
@@ -141,18 +155,6 @@
         </div>
       </mat-card-content>
     </mat-card>
-
-    <!-- Empty State -->
-    <mat-card class="empty-state" *ngIf="!summary() || summary()!.count === 0">
-      <mat-card-content>
-        <mat-icon>info</mat-icon>
-        <h3>No Expenses Found</h3>
-        <p>Start tracking your expenses to see analytics here.</p>
-        <button mat-raised-button color="primary" routerLink="/expenses/new">
-          <mat-icon>add</mat-icon>
-          Add Your First Expense
-        </button>
-      </mat-card-content>
-    </mat-card>
+    </ng-container>
   </div>
 </div>

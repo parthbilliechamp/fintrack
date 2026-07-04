@@ -3,12 +3,13 @@
 // ============================================
 
 .page-header {
+  display: block;
   margin-bottom: 24px;
 
   h2 {
     margin: 0 0 4px 0;
-    font-size: 24px;
-    font-weight: 600;
+    font-size: 26px;
+    font-weight: 800;
     color: var(--text-primary);
   }
 
@@ -36,7 +37,7 @@
     }
 
     &:hover {
-      background: #2563eb !important;
+      background: var(--primary-hover) !important;
     }
   }
 }
@@ -139,8 +140,11 @@
         }
 
         &.limit-cell {
+          text-align: right;
+
           .limit-input {
             width: 140px;
+            display: inline-block;
 
             ::ng-deep {
               .mat-mdc-text-field-wrapper {

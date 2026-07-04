@@ -115,9 +115,11 @@ export class ExpenseDashboardComponent implements OnInit, AfterViewChecked {
           datasets: [{
             label: 'Monthly Expenses',
             data: [],
-            backgroundColor: '#3f51b5',
-            borderColor: '#3f51b5',
-            borderWidth: 1
+            backgroundColor: 'rgba(5, 150, 105, 0.85)',
+            borderColor: '#059669',
+            borderWidth: 0,
+            borderRadius: 6,
+            barPercentage: 0.7
           }]
         },
         options: {
@@ -157,11 +159,11 @@ export class ExpenseDashboardComponent implements OnInit, AfterViewChecked {
           datasets: [{
             data: [],
             backgroundColor: [
-              '#FF6384',
-              '#36A2EB',
-              '#FFCE56',
-              '#4BC0C0',
-              '#9966FF'
+              '#f97316',
+              '#059669',
+              '#6366f1',
+              '#0ea5e9',
+              '#a855f7'
             ],
             borderWidth: 2,
             borderColor: '#fff'
@@ -209,10 +211,31 @@ export class ExpenseDashboardComponent implements OnInit, AfterViewChecked {
 
     const labels = data.map(item => item.category);
     const amounts = data.map(item => item.total);
+    const colors = labels.map(label => this.getCategoryColor(label));
 
     this.categoryChart.data.labels = labels;
     this.categoryChart.data.datasets[0].data = amounts;
+    this.categoryChart.data.datasets[0].backgroundColor = colors;
     this.categoryChart.update();
+  }
+
+  private getCategoryColor(category: string): string {
+    const colors: { [key: string]: string } = {
+      'Dine': '#f97316',
+      'Grocery': '#059669',
+      'Personal': '#6366f1'
+    };
+    const fallback = ['#0ea5e9', '#a855f7', '#f59e0b'];
+    return colors[category] || fallback[Math.abs(this.hashString(category)) % fallback.length];
+  }
+
+  private hashString(str: string): number {
+    let hash = 0;
+    for (let i = 0; i < str.length; i++) {
+      hash = (hash << 5) - hash + str.charCodeAt(i);
+      hash |= 0;
+    }
+    return hash;
   }
 
   formatCurrency(amount: number): string {

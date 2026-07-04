@@ -3,7 +3,7 @@
   <div class="page-header">
     <div class="header-title">
       <h1>{{ isEditMode ? 'Edit' : 'Add New' }} Investment Account</h1>
-      <p class="header-subtitle">{{ isEditMode ? 'Update your investment details' : 'Add a new investment account to track' }}</p>
+      <p class="header-subtitle">{{ isEditMode ? 'Update your account details' : 'Add a new investment account to track' }}</p>
     </div>
   </div>
 
@@ -34,35 +34,51 @@
 
         <div class="form-row two-columns">
           <mat-form-field appearance="outline">
-            <mat-label>Invested Amount</mat-label>
+            <mat-label>Total Invested (Till Date)</mat-label>
             <input matInput type="number" formControlName="investedAmount" placeholder="0.00">
             <span matPrefix>$&nbsp;</span>
             <mat-error *ngIf="investmentForm.get('investedAmount')?.hasError('required')">
-              Invested amount is required
+              Total invested amount is required
             </mat-error>
             <mat-error *ngIf="investmentForm.get('investedAmount')?.hasError('min')">
-              Amount must be greater than 0
+              Amount must be 0 or greater
             </mat-error>
           </mat-form-field>
 
           <mat-form-field appearance="outline">
-            <mat-label>Current Value</mat-label>
+            <mat-label>Current Value (Till Date)</mat-label>
             <input matInput type="number" formControlName="currentValue" placeholder="0.00">
             <span matPrefix>$&nbsp;</span>
             <mat-error *ngIf="investmentForm.get('currentValue')?.hasError('required')">
               Current value is required
             </mat-error>
             <mat-error *ngIf="investmentForm.get('currentValue')?.hasError('min')">
-              Amount must be greater than 0
+              Amount must be 0 or greater
             </mat-error>
           </mat-form-field>
         </div>
 
-        <div class="growth-indicator" *ngIf="investmentForm.get('investedAmount')?.value && investmentForm.get('currentValue')?.value">
+        <mat-form-field appearance="outline">
+          <mat-label>Invested This Year ({{ currentYear }})</mat-label>
+          <input matInput type="number" formControlName="yearInvestedAmount" placeholder="0.00">
+          <span matPrefix>$&nbsp;</span>
+          <mat-hint>Contributions made during the current calendar year</mat-hint>
+          <mat-error *ngIf="investmentForm.get('yearInvestedAmount')?.hasError('required')">
+            Year invested amount is required
+          </mat-error>
+          <mat-error *ngIf="investmentForm.get('yearInvestedAmount')?.hasError('min')">
+            Amount must be 0 or greater
+          </mat-error>
+          <mat-error *ngIf="investmentForm.get('yearInvestedAmount')?.hasError('exceedsTotal')">
+            Cannot exceed total invested amount
+          </mat-error>
+        </mat-form-field>
+
+        <div class="growth-indicator" *ngIf="investmentForm.get('investedAmount')?.value != null && investmentForm.get('currentValue')?.value != null">
           <mat-icon [class.positive]="calculateGrowth() >= 0" [class.negative]="calculateGrowth() < 0">
             {{ calculateGrowth() >= 0 ? 'trending_up' : 'trending_down' }}
           </mat-icon>
-          <span>Estimated Growth: </span>
+          <span>Growth (Till Date): </span>
           <span class="growth-value" [class.positive]="calculateGrowth() >= 0" [class.negative]="calculateGrowth() < 0">
             {{ formatPercentage(calculateGrowth()) }}
           </span>
@@ -71,7 +87,7 @@
         <div class="form-actions">
           <button mat-stroked-button type="button" routerLink="/investments">Cancel</button>
           <button mat-flat-button color="primary" type="submit" [disabled]="investmentForm.invalid">
-            {{ isEditMode ? 'Update' : 'Add' }} Investment
+            {{ isEditMode ? 'Update' : 'Add' }} Account
           </button>
         </div>
       </form>

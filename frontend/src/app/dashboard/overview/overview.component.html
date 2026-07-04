@@ -1,80 +1,296 @@
-<div class="overview-container">
+<div class="overview">
   <!-- Welcome Header -->
   <header class="welcome-header">
-    <h1>Welcome back, {{ stats.userName || 'User' }}</h1>
-    <p class="date-subtitle">{{ getCurrentMonthName() }}</p>
-  </header>
-
-  <!-- Loading State -->
-  <div class="loading-container" *ngIf="loading">
-    <mat-spinner diameter="40"></mat-spinner>
-  </div>
-
-  <!-- Stats Cards -->
-  <div class="stats-grid" *ngIf="!loading">
-    <!-- Net Worth Card -->
-    <mat-card class="stat-card net-worth">
-      <mat-card-content>
-        <div class="stat-icon">
-          <mat-icon>account_balance</mat-icon>
-        </div>
-        <div class="stat-details">
-          <span class="stat-label">Net Worth</span>
-          <span class="stat-value">{{ formatCurrency(stats.netWorth) }}</span>
-          <span class="stat-sublabel">Total assets</span>
-        </div>
-      </mat-card-content>
-    </mat-card>
-
-    <!-- Monthly Expense Card -->
-    <mat-card class="stat-card expenses">
-      <mat-card-content>
-        <div class="stat-icon">
-          <mat-icon>receipt_long</mat-icon>
-        </div>
-        <div class="stat-details">
-          <span class="stat-label">This Month's Expenses</span>
-          <span class="stat-value expense">{{ formatCurrency(stats.currentMonthExpense) }}</span>
-          <span class="stat-sublabel">{{ getCurrentMonthName() }}</span>
-        </div>
-      </mat-card-content>
-    </mat-card>
-
-    <!-- Total Investments Card -->
-    <mat-card class="stat-card investments">
-      <mat-card-content>
-        <div class="stat-icon">
-          <mat-icon>show_chart</mat-icon>
-        </div>
-        <div class="stat-details">
-          <span class="stat-label">Total Investments</span>
-          <span class="stat-value">{{ formatCurrency(stats.totalInvestments) }}</span>
-          <span class="stat-sublabel">Current portfolio value</span>
-        </div>
-      </mat-card-content>
-    </mat-card>
-  </div>
-
-  <!-- Quick Actions -->
-  <div class="quick-actions" *ngIf="!loading">
-    <h2>Quick Actions</h2>
-    <div class="actions-grid">
-      <button mat-stroked-button routerLink="/expenses/new">
+    <div class="welcome-text">
+      <span class="eyebrow">{{ getGreeting() }}</span>
+      <h1>{{ stats.userName || 'Welcome back' }}</h1>
+      <p class="date-subtitle">
+        <mat-icon>calendar_today</mat-icon>
+        {{ getCurrentMonthName() }}
+      </p>
+    </div>
+    <div class="welcome-actions">
+      <button mat-flat-button color="primary" routerLink="/expenses/new">
         <mat-icon>add</mat-icon>
         Add Expense
       </button>
       <button mat-stroked-button [routerLink]="['/investments', 'new']">
-        <mat-icon>add</mat-icon>
+        <mat-icon>trending_up</mat-icon>
         Add Investment
       </button>
-      <button mat-stroked-button routerLink="/expenses">
-        <mat-icon>list</mat-icon>
-        View Expenses
-      </button>
-      <button mat-stroked-button routerLink="/investments">
-        <mat-icon>analytics</mat-icon>
-        View Investments
-      </button>
     </div>
+  </header>
+
+  <!-- Loading State -->
+  <div class="loading-container" *ngIf="loading">
+    <mat-spinner diameter="42"></mat-spinner>
+    <p>Loading your financial overview…</p>
   </div>
+
+  <ng-container *ngIf="!loading">
+    <!-- KPI Cards -->
+    <div class="kpi-grid">
+      <mat-card class="kpi-card accent-primary">
+        <div class="kpi-top">
+          <div class="kpi-icon"><mat-icon>account_balance</mat-icon></div>
+          <span class="kpi-tag">Assets</span>
+        </div>
+        <span class="kpi-label">Net Worth</span>
+        <span class="kpi-value">{{ formatCurrency(stats.netWorth) }}</span>
+        <span class="kpi-foot">Total portfolio value</span>
+      </mat-card>
+
+      <mat-card class="kpi-card accent-expense">
+        <div class="kpi-top">
+          <div class="kpi-icon"><mat-icon>receipt_long</mat-icon></div>
+          <span class="kpi-tag">This month</span>
+        </div>
+        <span class="kpi-label">Spending</span>
+        <span class="kpi-value">{{ formatCurrency(stats.currentMonthExpense) }}</span>
+        <span class="kpi-foot">{{ getCurrentMonthName() }}</span>
+      </mat-card>
+
+      <mat-card class="kpi-card"
+                [class.accent-success]="stats.portfolioGrowthPercentage >= 0"
+                [class.accent-danger]="stats.portfolioGrowthPercentage < 0">
+        <div class="kpi-top">
+          <div class="kpi-icon">
+            <mat-icon>{{ stats.portfolioGrowthPercentage >= 0 ? 'trending_up' : 'trending_down' }}</mat-icon>
+          </div>
+          <span class="kpi-chip"
+                [class.positive]="stats.portfolioGrowthPercentage >= 0"
+                [class.negative]="stats.portfolioGrowthPercentage < 0">
+            {{ formatPercentage(stats.portfolioGrowthPercentage) }}
+          </span>
+        </div>
+        <span class="kpi-label">Portfolio Growth</span>
+        <span class="kpi-value"
+              [class.positive]="stats.portfolioGain > 0"
+              [class.negative]="stats.portfolioGain < 0">
+          {{ formatCurrency(stats.portfolioGain) }}
+        </span>
+        <span class="kpi-foot">Total gain / loss</span>
+      </mat-card>
+
+      <mat-card class="kpi-card accent-income">
+        <div class="kpi-top">
+          <div class="kpi-icon"><mat-icon>payments</mat-icon></div>
+          <span class="kpi-tag">Income</span>
+        </div>
+        <span class="kpi-label">Monthly Take-Home</span>
+        <span class="kpi-value">{{ formatCurrency(stats.monthlyIncome) }}</span>
+        <span class="kpi-foot">{{ formatCurrency(stats.biweeklyIncome) }} biweekly</span>
+      </mat-card>
+    </div>
+
+    <!-- Main Grid -->
+    <div class="overview-grid">
+      <!-- Left column -->
+      <div class="col-main">
+        <!-- Spending breakdown -->
+        <mat-card class="panel">
+          <div class="panel-header">
+            <div class="panel-title">
+              <mat-icon>donut_large</mat-icon>
+              <div>
+                <h3>Spending Breakdown</h3>
+                <span class="panel-sub">{{ getCurrentMonthName() }}</span>
+              </div>
+            </div>
+            <a class="panel-link" routerLink="/expenses/dashboard">
+              Details <mat-icon>chevron_right</mat-icon>
+            </a>
+          </div>
+
+          <div class="panel-body" *ngIf="hasExpenses; else noSpending">
+            <div class="breakdown-total">
+              <span class="bt-label">Total spent</span>
+              <span class="bt-value">{{ formatCurrency(stats.currentMonthExpense) }}</span>
+            </div>
+            <div class="breakdown-list">
+              <div class="breakdown-row" *ngFor="let cat of categoryBreakdown">
+                <div class="br-head">
+                  <span class="br-name">
+                    <span class="br-dot" [style.background]="cat.colorVar"></span>
+                    <mat-icon [style.color]="cat.colorVar">{{ cat.icon }}</mat-icon>
+                    {{ cat.category }}
+                  </span>
+                  <span class="br-amount">
+                    {{ formatCurrency(cat.total) }}
+                    <span class="br-pct">{{ cat.percentage | number:'1.0-0' }}%</span>
+                  </span>
+                </div>
+                <div class="br-track">
+                  <div class="br-fill" [style.width.%]="cat.percentage" [style.background]="cat.colorVar"></div>
+                </div>
+              </div>
+            </div>
+          </div>
+          <ng-template #noSpending>
+            <div class="panel-empty">
+              <mat-icon>savings</mat-icon>
+              <p>No expenses recorded this month yet.</p>
+              <button mat-stroked-button routerLink="/expenses/new">
+                <mat-icon>add</mat-icon> Add your first expense
+              </button>
+            </div>
+          </ng-template>
+        </mat-card>
+
+        <!-- Recent transactions -->
+        <mat-card class="panel">
+          <div class="panel-header">
+            <div class="panel-title">
+              <mat-icon>history</mat-icon>
+              <div>
+                <h3>Recent Transactions</h3>
+                <span class="panel-sub">Your latest activity</span>
+              </div>
+            </div>
+            <a class="panel-link" routerLink="/expenses">
+              View all <mat-icon>chevron_right</mat-icon>
+            </a>
+          </div>
+
+          <div class="panel-body no-pad" *ngIf="recentTransactions.length > 0; else noTx">
+            <div class="tx-row" *ngFor="let tx of recentTransactions">
+              <div class="tx-icon" [attr.data-cat]="tx.category">
+                <mat-icon>{{ getCategoryIcon(tx.category) }}</mat-icon>
+              </div>
+              <div class="tx-info">
+                <span class="tx-details">{{ tx.details }}</span>
+                <span class="tx-meta">{{ tx.category }} · {{ formatDate(tx.date) }}</span>
+              </div>
+              <span class="tx-amount">−{{ formatCurrency(tx.amount) }}</span>
+            </div>
+          </div>
+          <ng-template #noTx>
+            <div class="panel-empty">
+              <mat-icon>receipt_long</mat-icon>
+              <p>No transactions yet.</p>
+            </div>
+          </ng-template>
+        </mat-card>
+      </div>
+
+      <!-- Right column -->
+      <div class="col-side">
+        <!-- Portfolio -->
+        <mat-card class="panel portfolio-panel">
+          <div class="panel-header">
+            <div class="panel-title">
+              <mat-icon>pie_chart</mat-icon>
+              <div>
+                <h3>Portfolio</h3>
+                <span class="panel-sub">Top accounts</span>
+              </div>
+            </div>
+            <a class="panel-link" routerLink="/investments">
+              Manage <mat-icon>chevron_right</mat-icon>
+            </a>
+          </div>
+
+          <div class="portfolio-summary">
+            <div>
+              <span class="ps-label">Total value</span>
+              <span class="ps-value">{{ formatCurrency(stats.portfolioValue) }}</span>
+            </div>
+            <span class="pill" [class.positive]="stats.portfolioGrowthPercentage >= 0" [class.negative]="stats.portfolioGrowthPercentage < 0">
+              <mat-icon>{{ stats.portfolioGrowthPercentage >= 0 ? 'arrow_upward' : 'arrow_downward' }}</mat-icon>
+              {{ formatPercentage(stats.portfolioGrowthPercentage) }}
+            </span>
+          </div>
+
+          <div class="panel-body no-pad" *ngIf="hasPortfolio; else noPortfolio">
+            <div class="acct-row" *ngFor="let acct of portfolioRows">
+              <div class="acct-icon"><mat-icon>{{ acct.icon }}</mat-icon></div>
+              <div class="acct-info">
+                <span class="acct-name">{{ acct.accountName }}</span>
+                <span class="acct-type">{{ acct.accountType }}</span>
+              </div>
+              <div class="acct-values">
+                <span class="acct-value">{{ formatCurrency(acct.currentValue) }}</span>
+                <span class="acct-growth" [class.positive]="acct.growth >= 0" [class.negative]="acct.growth < 0">
+                  {{ formatPercentage(acct.growth) }}
+                </span>
+              </div>
+            </div>
+          </div>
+          <ng-template #noPortfolio>
+            <div class="panel-empty">
+              <mat-icon>account_balance</mat-icon>
+              <p>No investment accounts yet.</p>
+              <button mat-stroked-button [routerLink]="['/investments', 'new']">
+                <mat-icon>add</mat-icon> Add account
+              </button>
+            </div>
+          </ng-template>
+        </mat-card>
+
+        <!-- Contribution room -->
+        <mat-card class="panel" *ngIf="contributionRoom.length > 0">
+          <div class="panel-header">
+            <div class="panel-title">
+              <mat-icon>track_changes</mat-icon>
+              <div>
+                <h3>Contribution Room</h3>
+                <span class="panel-sub">This year's usage</span>
+              </div>
+            </div>
+            <a class="panel-link" routerLink="/contribution-limits">
+              Edit <mat-icon>chevron_right</mat-icon>
+            </a>
+          </div>
+
+          <div class="panel-body">
+            <div class="room-row" *ngFor="let room of contributionRoom">
+              <div class="room-head">
+                <span class="room-name">
+                  <mat-icon>{{ room.icon }}</mat-icon> {{ room.accountType }}
+                </span>
+                <span class="room-usage">
+                  {{ formatCurrency(room.used) }} <span class="room-sep">/</span> {{ formatCurrency(room.limit) }}
+                </span>
+              </div>
+              <div class="room-track">
+                <div class="room-fill"
+                     [class.over]="room.used > room.limit"
+                     [style.width.%]="room.percentage"></div>
+              </div>
+              <span class="room-remaining" [class.over]="room.remaining < 0">
+                {{ room.remaining >= 0 ? (formatCurrency(room.remaining) + ' remaining') : (formatCurrency(-room.remaining) + ' over limit') }}
+              </span>
+            </div>
+          </div>
+        </mat-card>
+      </div>
+    </div>
+
+    <!-- Quick actions -->
+    <div class="quick-actions">
+      <h3 class="qa-title">Quick Actions</h3>
+      <div class="qa-grid">
+        <a class="qa-tile" routerLink="/expenses">
+          <div class="qa-icon"><mat-icon>credit_card</mat-icon></div>
+          <div class="qa-text"><span>Expenses</span><small>Track your spending</small></div>
+          <mat-icon class="qa-arrow">arrow_forward</mat-icon>
+        </a>
+        <a class="qa-tile" routerLink="/investments">
+          <div class="qa-icon"><mat-icon>trending_up</mat-icon></div>
+          <div class="qa-text"><span>Investments</span><small>Grow your wealth</small></div>
+          <mat-icon class="qa-arrow">arrow_forward</mat-icon>
+        </a>
+        <a class="qa-tile" routerLink="/contribution-limits">
+          <div class="qa-icon"><mat-icon>account_balance</mat-icon></div>
+          <div class="qa-text"><span>Contribution Limits</span><small>Track your room</small></div>
+          <mat-icon class="qa-arrow">arrow_forward</mat-icon>
+        </a>
+        <a class="qa-tile" routerLink="/budget-planner">
+          <div class="qa-icon"><mat-icon>pie_chart</mat-icon></div>
+          <div class="qa-text"><span>Budget Planner</span><small>Plan your paycheck</small></div>
+          <mat-icon class="qa-arrow">arrow_forward</mat-icon>
+        </a>
+      </div>
+    </div>
+  </ng-container>
 </div>

@@ -32,6 +32,7 @@ export class InvestmentFormComponent implements OnInit {
   investmentId: string | null = null;
   isEditMode = false;
   accountTypes = ['RRSP', 'TFSA', 'FHSA', 'Savings'];
+  currentYear = new Date().getFullYear();
 
   constructor(
     private fb: FormBuilder,
@@ -43,7 +44,8 @@ export class InvestmentFormComponent implements OnInit {
       accountName: ['', Validators.required],
       accountType: ['', Validators.required],
       investedAmount: ['', [Validators.required, Validators.min(0)]],
-      currentValue: ['', [Validators.required, Validators.min(0)]]
+      currentValue: ['', [Validators.required, Validators.min(0)]],
+      yearInvestedAmount: [0, [Validators.required, Validators.min(0)]]
     });
   }
 
@@ -64,7 +66,8 @@ export class InvestmentFormComponent implements OnInit {
           accountName: investment.accountName,
           accountType: investment.accountType,
           investedAmount: investment.investedAmount,
-          currentValue: investment.currentValue
+          currentValue: investment.currentValue,
+          yearInvestedAmount: investment.yearInvestedAmount ?? 0
         });
       }
     });
@@ -72,8 +75,15 @@ export class InvestmentFormComponent implements OnInit {
 
   onSubmit(): void {
     if (this.investmentForm.valid) {
+      const payload = this.investmentForm.value;
+
+      if (payload.yearInvestedAmount > payload.investedAmount) {
+        this.investmentForm.get('yearInvestedAmount')?.setErrors({ exceedsTotal: true });
+        return;
+      }
+
       if (this.isEditMode && this.investmentId) {
-        this.investmentService.updateInvestment(this.investmentId, this.investmentForm.value).subscribe({
+        this.investmentService.updateInvestment(this.investmentId, payload).subscribe({
           next: () => {
             this.router.navigate(['/investments']);
           },
@@ -82,7 +92,7 @@ export class InvestmentFormComponent implements OnInit {
           }
         });
       } else {
-        this.investmentService.addInvestment(this.investmentForm.value).subscribe({
+        this.investmentService.addInvestment(payload).subscribe({
           next: () => {
             this.router.navigate(['/investments']);
           },
@@ -97,7 +107,7 @@ export class InvestmentFormComponent implements OnInit {
   calculateGrowth(): number {
     const invested = this.investmentForm.get('investedAmount')?.value || 0;
     const current = this.investmentForm.get('currentValue')?.value || 0;
-    
+
     if (invested === 0) return 0;
     return ((current - invested) / invested) * 100;
   }

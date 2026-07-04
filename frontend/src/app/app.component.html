@@ -27,6 +27,14 @@
           <mat-icon>trending_up</mat-icon>
           <span>Investments</span>
         </a>
+        <a mat-list-item routerLink="/contribution-limits" routerLinkActive="active" class="nav-item" (click)="mobileQuery.matches && sidenav.close()">
+          <mat-icon>account_balance</mat-icon>
+          <span>Contribution Limits</span>
+        </a>
+        <a mat-list-item routerLink="/budget-planner" routerLinkActive="active" class="nav-item" (click)="mobileQuery.matches && sidenav.close()">
+          <mat-icon>pie_chart</mat-icon>
+          <span>Budget Planner</span>
+        </a>
       </mat-nav-list>
 
       <!-- User Section -->
@@ -62,7 +70,9 @@
       <div class="spacer"></div>
     </div>
     
-    <div class="main-content" [class.with-mobile-header]="mobileQuery.matches && (isAuthenticated$ | async)">
+    <div class="main-content"
+         [class.with-mobile-header]="mobileQuery.matches && (isAuthenticated$ | async)"
+         [class.auth-mode]="!(isAuthenticated$ | async)">
       <router-outlet></router-outlet>
     </div>
   </mat-sidenav-content>

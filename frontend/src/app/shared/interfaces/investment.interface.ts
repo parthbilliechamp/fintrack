@@ -5,6 +5,7 @@ export interface Investment {
     accountType: 'RRSP' | 'TFSA' | 'FHSA' | 'Savings';
     investedAmount: number;
     currentValue: number;
+    yearInvestedAmount: number;
 }
 
 export interface ContributionLimit {
@@ -14,12 +15,3 @@ export interface ContributionLimit {
     accountType: 'RRSP' | 'TFSA' | 'FHSA';
     limit: number;
 }
-
-export interface InvestmentTransaction {
-    id: string;
-    userId: string;
-    amount: number;
-    date: string;
-    accountId: string;
-}
-

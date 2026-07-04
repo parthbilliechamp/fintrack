@@ -1,8 +1,29 @@
 import { Router, Request, Response } from 'express';
-import { Investment, ContributionLimit, InvestmentTransaction } from '../database/models';
+import { Investment, ContributionLimit } from '../database/models';
 import logger from '../logger';
 
 const router = Router();
+
+function validateInvestmentAmounts(
+  investedAmount: unknown,
+  currentValue: unknown,
+  yearInvestedAmount: unknown
+): string | null {
+  if (typeof investedAmount !== 'number' || investedAmount < 0) {
+    return 'Total invested amount must be a non-negative number';
+  }
+  if (typeof currentValue !== 'number' || currentValue < 0) {
+    return 'Current value must be a non-negative number';
+  }
+  const yearAmount = yearInvestedAmount === undefined ? 0 : yearInvestedAmount;
+  if (typeof yearAmount !== 'number' || yearAmount < 0) {
+    return 'Year invested amount must be a non-negative number';
+  }
+  if (yearAmount > investedAmount) {
+    return 'Year invested amount cannot exceed total invested amount';
+  }
+  return null;
+}
 
 // ============ INVESTMENT ACCOUNT ENDPOINTS ============
 
@@ -17,6 +38,62 @@ router.get('/:userId', async (req: Request, res: Response) => {
   } catch (error) {
     logger.error('Failed to fetch investments', { error: (error as Error).message });
     res.status(500).json({ error: 'Failed to fetch investments' });
+  }
+});
+
+// Get overall investment summary
+// NOTE: must be registered before '/:userId/:id' so 'summary' is not matched as an investment id
+router.get('/:userId/summary', async (req: Request, res: Response) => {
+  try {
+    const { userId } = req.params;
+
+    const [summaryResult, byAccountTypeResult] = await Promise.all([
+      Investment.aggregate([
+        { $match: { userId } },
+        {
+          $group: {
+            _id: null,
+            totalInvested: { $sum: '$investedAmount' },
+            totalValue: { $sum: '$currentValue' },
+            totalYearInvested: { $sum: { $ifNull: ['$yearInvestedAmount', 0] } },
+            count: { $sum: 1 }
+          }
+        }
+      ]),
+      Investment.aggregate([
+        { $match: { userId } },
+        {
+          $group: {
+            _id: '$accountType',
+            invested: { $sum: '$investedAmount' },
+            value: { $sum: '$currentValue' }
+          }
+        }
+      ])
+    ]);
+
+    const summary = summaryResult[0] || { totalInvested: 0, totalValue: 0, totalYearInvested: 0, count: 0 };
+    const growth = summary.totalValue - summary.totalInvested;
+    const growthPercentage = summary.totalInvested > 0 ? (growth / summary.totalInvested) * 100 : 0;
+
+    const byAccountType: { [key: string]: { invested: number; value: number } } = {};
+    byAccountTypeResult.forEach((item: any) => {
+      byAccountType[item._id] = { invested: item.invested, value: item.value };
+    });
+
+    logger.debug('Investment summary retrieved', { userId, totalInvested: summary.totalInvested, totalValue: summary.totalValue, count: summary.count });
+    res.status(200).json({
+      totalInvested: summary.totalInvested,
+      totalValue: summary.totalValue,
+      totalYearInvested: summary.totalYearInvested ?? 0,
+      count: summary.count,
+      growth,
+      growthPercentage,
+      byAccountType
+    });
+  } catch (error) {
+    logger.error('Failed to get investment summary', { error: (error as Error).message });
+    res.status(500).json({ error: 'Failed to get investment summary' });
   }
 });
 
@@ -45,7 +122,7 @@ router.get('/:userId/:id', async (req: Request, res: Response) => {
 router.post('/:userId', async (req: Request, res: Response) => {
   try {
     const { userId } = req.params;
-    const { accountName, accountType, investedAmount, currentValue } = req.body;
+    const { accountName, accountType, investedAmount, currentValue, yearInvestedAmount } = req.body;
     logger.debug('Creating investment', { userId, accountType, accountName });
 
     // Validation
@@ -55,20 +132,17 @@ router.post('/:userId', async (req: Request, res: Response) => {
       return;
     }
 
+    const amountError = validateInvestmentAmounts(investedAmount, currentValue, yearInvestedAmount);
+    if (amountError) {
+      res.status(400).json({ error: amountError });
+      return;
+    }
+
+    const normalizedYearInvested = yearInvestedAmount ?? 0;
+
     // Validate account type
     if (!['RRSP', 'TFSA', 'FHSA', 'Savings'].includes(accountType)) {
       res.status(400).json({ error: 'Invalid account type. Must be one of: RRSP, TFSA, FHSA, Savings' });
-      return;
-    }
-
-    // Validate amounts
-    if (typeof investedAmount !== 'number' || investedAmount < 0) {
-      res.status(400).json({ error: 'Invested amount must be a non-negative number' });
-      return;
-    }
-
-    if (typeof currentValue !== 'number' || currentValue < 0) {
-      res.status(400).json({ error: 'Current value must be a non-negative number' });
       return;
     }
 
@@ -83,7 +157,8 @@ router.post('/:userId', async (req: Request, res: Response) => {
       accountName: accountName.trim(),
       accountType,
       investedAmount,
-      currentValue
+      currentValue,
+      yearInvestedAmount: normalizedYearInvested
     });
     await newInvestment.save();
 
@@ -99,12 +174,12 @@ router.post('/:userId', async (req: Request, res: Response) => {
 router.put('/:userId/:id', async (req: Request, res: Response) => {
   try {
     const { userId, id } = req.params;
-    const { accountName, accountType, investedAmount, currentValue } = req.body;
+    const { accountName, accountType, investedAmount, currentValue, yearInvestedAmount } = req.body;
     logger.debug('Updating investment', { userId, investmentId: id });
 
     // Validation
     const VALID_ACCOUNT_TYPES = ['RRSP', 'TFSA', 'FHSA', 'Savings'];
-    if (!accountName || !accountType || investedAmount === undefined || currentValue === undefined) {
+    if (!accountName || !accountType || investedAmount === undefined || currentValue === undefined || yearInvestedAmount === undefined) {
       logger.warn('Update investment failed: missing fields', { userId, investmentId: id });
       res.status(400).json({ error: 'Missing required fields' });
       return;
@@ -117,12 +192,10 @@ router.put('/:userId/:id', async (req: Request, res: Response) => {
       res.status(400).json({ error: 'Account name must be a non-empty string' });
       return;
     }
-    if (typeof investedAmount !== 'number' || investedAmount < 0) {
-      res.status(400).json({ error: 'Invested amount must be a non-negative number' });
-      return;
-    }
-    if (typeof currentValue !== 'number' || currentValue < 0) {
-      res.status(400).json({ error: 'Current value must be a non-negative number' });
+
+    const amountError = validateInvestmentAmounts(investedAmount, currentValue, yearInvestedAmount);
+    if (amountError) {
+      res.status(400).json({ error: amountError });
       return;
     }
 
@@ -132,7 +205,8 @@ router.put('/:userId/:id', async (req: Request, res: Response) => {
         accountName: accountName.trim(),
         accountType,
         investedAmount,
-        currentValue
+        currentValue,
+        yearInvestedAmount
       },
       { new: true }
     );
@@ -163,9 +237,6 @@ router.delete('/:userId/:id', async (req: Request, res: Response) => {
       res.status(404).json({ error: 'Investment not found' });
       return;
     }
-
-    // Also delete related transactions
-    await InvestmentTransaction.deleteMany({ accountId: id });
 
     logger.info('Investment deleted', { userId, investmentId: id });
     res.status(200).json({ message: 'Investment deleted successfully' });
@@ -303,168 +374,6 @@ router.delete('/:userId/limits/:id', async (req: Request, res: Response) => {
   }
 });
 
-// ============ TRANSACTIONS ENDPOINTS ============
-
-// Get all transactions for a user
-router.get('/:userId/transactions/all', async (req: Request, res: Response) => {
-  try {
-    const { userId } = req.params;
-    logger.debug('Fetching transactions', { userId });
-    const userTransactions = await InvestmentTransaction.find({ userId }).sort({ date: -1 });
-    logger.info('Transactions fetched', { userId, count: userTransactions.length });
-    res.status(200).json(userTransactions);
-  } catch (error) {
-    logger.error('Failed to fetch transactions', { error: (error as Error).message });
-    res.status(500).json({ error: 'Failed to fetch transactions' });
-  }
-});
-
-// Create transaction
-router.post('/:userId/transactions', async (req: Request, res: Response) => {
-  try {
-    const { userId } = req.params;
-    const { amount, date, accountId } = req.body;
-    logger.debug('Creating transaction', { userId, accountId, amount });
-
-    // Validation
-    if (!amount || !date || !accountId) {
-      logger.warn('Create transaction failed: missing fields', { userId });
-      res.status(400).json({ error: 'Missing required fields' });
-      return;
-    }
-    if (typeof amount !== 'number' || amount === 0) {
-      res.status(400).json({ error: 'Amount must be a non-zero number' });
-      return;
-    }
-    // Validate date is ISO 8601 format
-    if (typeof date !== 'string' || !date.match(/^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}(\.\d{3})?Z?$/)) {
-      res.status(400).json({ error: 'Date must be in ISO 8601 format (e.g., 2024-01-15T10:30:00Z)' });
-      return;
-    }
-    const dateObj = new Date(date);
-    if (isNaN(dateObj.getTime())) {
-      res.status(400).json({ error: 'Date is not a valid date' });
-      return;
-    }
-    if (typeof accountId !== 'string' || accountId.trim() === '') {
-      res.status(400).json({ error: 'Account ID must be a non-empty string' });
-      return;
-    }
-
-    // Verify that the investment account exists for this user
-    const investment = await Investment.findOne({ _id: accountId, userId });
-    if (!investment) {
-      res.status(404).json({ error: 'Investment account not found' });
-      return;
-    }
-
-    // Create the transaction
-    const newTransaction = new InvestmentTransaction({
-      userId,
-      amount,
-      date: dateObj,
-      accountId
-    });
-    await newTransaction.save();
-
-    logger.info('Transaction created; investment update delegated to database trigger', {
-      userId,
-      transactionId: newTransaction._id,
-      accountId
-    });
-
-    res.status(201).json({
-      transaction: newTransaction,
-      updatedInvestment: null
-    });
-  } catch (error) {
-    logger.error('Failed to create transaction', { error: (error as Error).message });
-    res.status(500).json({ error: 'Failed to create transaction' });
-  }
-});
-
-// Delete transaction
-router.delete('/:userId/transactions/:id', async (req: Request, res: Response) => {
-  try {
-    const { userId, id } = req.params;
-    logger.debug('Deleting transaction', { userId, transactionId: id });
-
-    const deletedTransaction = await InvestmentTransaction.findOneAndDelete({ _id: id, userId });
-
-    if (!deletedTransaction) {
-      logger.warn('Delete transaction failed: not found', { userId, transactionId: id });
-      res.status(404).json({ error: 'Transaction not found' });
-      return;
-    }
-
-    logger.info('Transaction deleted', { userId, transactionId: id });
-    res.status(200).json({ message: 'Transaction deleted successfully' });
-  } catch (error) {
-    logger.error('Failed to delete transaction', { error: (error as Error).message });
-    res.status(500).json({ error: 'Failed to delete transaction' });
-  }
-});
-
-// Update transaction
-router.put('/:userId/transactions/:id', async (req: Request, res: Response) => {
-  try {
-    const { userId, id } = req.params;
-    const { amount, date, accountId } = req.body;
-    logger.debug('Updating transaction', { userId, transactionId: id, accountId, amount });
-
-    // Validation
-    if (!amount || !date || !accountId) {
-      res.status(400).json({ error: 'Missing required fields' });
-      return;
-    }
-    if (typeof amount !== 'number' || amount === 0) {
-      res.status(400).json({ error: 'Amount must be a non-zero number' });
-      return;
-    }
-    if (typeof date !== 'string' || !date.match(/^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}(\.\d{3})?Z?$/)) {
-      res.status(400).json({ error: 'Date must be in ISO 8601 format (e.g., 2024-01-15T10:30:00Z)' });
-      return;
-    }
-    const dateObj = new Date(date);
-    if (isNaN(dateObj.getTime())) {
-      res.status(400).json({ error: 'Date is not a valid date' });
-      return;
-    }
-    if (typeof accountId !== 'string' || accountId.trim() === '') {
-      res.status(400).json({ error: 'Account ID must be a non-empty string' });
-      return;
-    }
-
-    // Verify account exists for user
-    const investment = await Investment.findOne({ _id: accountId, userId });
-    if (!investment) {
-      res.status(404).json({ error: 'Investment account not found' });
-      return;
-    }
-
-    const updatedTransaction = await InvestmentTransaction.findOneAndUpdate(
-      { _id: id, userId },
-      { amount, date: dateObj, accountId },
-      { new: true }
-    );
-
-    if (!updatedTransaction) {
-      res.status(404).json({ error: 'Transaction not found' });
-      return;
-    }
-
-    logger.info('Transaction updated; investment update delegated to database trigger', {
-      userId,
-      transactionId: id,
-      accountId
-    });
-    res.status(200).json(updatedTransaction);
-  } catch (error) {
-    logger.error('Failed to update transaction', { error: (error as Error).message });
-    res.status(500).json({ error: 'Failed to update transaction' });
-  }
-});
-
 // ============ CONTRIBUTION STATUS ENDPOINTS ============
 
 // Get contribution status for a user (calculate used from total invested amounts)
@@ -488,16 +397,18 @@ router.get('/:userId/limits/status', async (req: Request, res: Response) => {
     // Get investments for this user and calculate total invested by account type
     const userInvestments = await Investment.find({ userId });
 
+    const currentYear = new Date().getFullYear();
+
     // Calculate used amounts for all account types with limits
-    // "Used" is the total investedAmount across all investments of that account type
+    // "Used" is yearInvestedAmount for the current year, otherwise 0 for past/future years
     const result = accountTypesWithLimits.map(accountType => {
-      // Get the limit for this account type (if set)
       const existingLimit = yearLimits.find(l => l.accountType === accountType);
       const limit = existingLimit ? existingLimit.limit : 0;
-      
-      // Get all accounts of this type and sum their invested amounts
+
       const accountsOfType = userInvestments.filter(inv => inv.accountType === accountType);
-      const used = accountsOfType.reduce((sum, inv) => sum + inv.investedAmount, 0);
+      const used = year === currentYear
+        ? accountsOfType.reduce((sum, inv) => sum + (inv.yearInvestedAmount ?? 0), 0)
+        : 0;
 
       return {
         accountType,
@@ -527,6 +438,7 @@ router.get('/:userId/aggregates/by-account-type', async (req: Request, res: Resp
           _id: '$accountType',
           totalInvested: { $sum: '$investedAmount' },
           totalValue: { $sum: '$currentValue' },
+          totalYearInvested: { $sum: { $ifNull: ['$yearInvestedAmount', 0] } },
           count: { $sum: 1 }
         }
       },
@@ -536,6 +448,7 @@ router.get('/:userId/aggregates/by-account-type', async (req: Request, res: Resp
           accountType: '$_id',
           totalInvested: 1,
           totalValue: 1,
+          totalYearInvested: 1,
           count: 1,
           growth: { $subtract: ['$totalValue', '$totalInvested'] },
           growthPercentage: {
@@ -557,57 +470,5 @@ router.get('/:userId/aggregates/by-account-type', async (req: Request, res: Resp
   }
 });
 
-// Get overall investment summary
-router.get('/:userId/summary', async (req: Request, res: Response) => {
-  try {
-    const { userId } = req.params;
-
-    const [summaryResult, byAccountTypeResult] = await Promise.all([
-      Investment.aggregate([
-        { $match: { userId } },
-        {
-          $group: {
-            _id: null,
-            totalInvested: { $sum: '$investedAmount' },
-            totalValue: { $sum: '$currentValue' },
-            count: { $sum: 1 }
-          }
-        }
-      ]),
-      Investment.aggregate([
-        { $match: { userId } },
-        {
-          $group: {
-            _id: '$accountType',
-            invested: { $sum: '$investedAmount' },
-            value: { $sum: '$currentValue' }
-          }
-        }
-      ])
-    ]);
-
-    const summary = summaryResult[0] || { totalInvested: 0, totalValue: 0, count: 0 };
-    const growth = summary.totalValue - summary.totalInvested;
-    const growthPercentage = summary.totalInvested > 0 ? (growth / summary.totalInvested) * 100 : 0;
-
-    const byAccountType: { [key: string]: { invested: number; value: number } } = {};
-    byAccountTypeResult.forEach((item: any) => {
-      byAccountType[item._id] = { invested: item.invested, value: item.value };
-    });
-
-    logger.debug('Investment summary retrieved', { userId, totalInvested: summary.totalInvested, totalValue: summary.totalValue, count: summary.count });
-    res.status(200).json({
-      totalInvested: summary.totalInvested,
-      totalValue: summary.totalValue,
-      count: summary.count,
-      growth,
-      growthPercentage,
-      byAccountType
-    });
-  } catch (error) {
-    logger.error('Failed to get investment summary', { error: (error as Error).message });
-    res.status(500).json({ error: 'Failed to get investment summary' });
-  }
-});
 
 export default router;

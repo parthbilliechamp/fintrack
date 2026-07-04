@@ -1,0 +1,511 @@
+.plan-container {
+  padding: 0;
+}
+
+.header-subtitle {
+  margin-top: 4px;
+  font-size: 14px;
+  color: var(--text-secondary);
+}
+
+.loading-container {
+  display: flex;
+  justify-content: center;
+  padding: 60px 0;
+}
+
+.empty-state {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 12px;
+  padding: 60px 0;
+  color: var(--text-secondary);
+
+  mat-icon {
+    font-size: 40px;
+    width: 40px;
+    height: 40px;
+  }
+}
+
+// ============ Summary cards (4 across) ============
+.summary-grid {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 20px;
+  margin-bottom: 24px;
+
+  @media (max-width: 1024px) {
+    grid-template-columns: repeat(2, 1fr);
+  }
+
+  @media (max-width: 560px) {
+    grid-template-columns: 1fr;
+  }
+}
+
+.stat-card {
+  mat-card-content {
+    display: flex;
+    flex-direction: row;
+    align-items: center;
+    gap: 16px;
+    padding: 20px !important;
+  }
+
+  .stat-icon {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 48px;
+    height: 48px;
+    border-radius: var(--radius-md);
+    background: var(--primary-light);
+    color: var(--primary);
+    flex-shrink: 0;
+
+    mat-icon {
+      font-size: 24px;
+      width: 24px;
+      height: 24px;
+    }
+  }
+
+  .stat-details {
+    display: flex;
+    flex-direction: column;
+    min-width: 0;
+  }
+
+  .stat-label {
+    font-size: 13px;
+    font-weight: 500;
+    color: var(--text-secondary);
+    margin-bottom: 4px;
+  }
+
+  .stat-value {
+    font-family: 'DM Sans', 'Inter', sans-serif;
+    font-size: 24px;
+    font-weight: 700;
+    color: var(--text-primary);
+    line-height: 1.2;
+  }
+
+  .stat-sublabel {
+    font-size: 12px;
+    color: var(--text-tertiary);
+    margin-top: 2px;
+  }
+
+  &.invest .stat-icon { background: rgba(99, 102, 241, 0.12); color: #6366f1; }
+  &.etf .stat-icon { background: rgba(245, 158, 11, 0.14); color: var(--warning); }
+  &.expense .stat-icon { background: rgba(239, 68, 68, 0.1); color: var(--error); }
+
+  // Colored left accent bar (matches the metric's icon color)
+  &::before {
+    content: '';
+    position: absolute;
+    left: 0;
+    top: 0;
+    bottom: 0;
+    width: 4px;
+    border-radius: var(--radius-lg) 0 0 var(--radius-lg);
+  }
+  &.income::before  { background: var(--primary); }
+  &.invest::before  { background: #6366f1; }
+  &.etf::before     { background: var(--warning); }
+  &.expense::before { background: var(--error); }
+}
+
+// ============ Cash-flow ratio bar ============
+.flow-summary {
+  background: var(--surface);
+  border: 1px solid var(--border-light);
+  border-radius: var(--radius-lg);
+  box-shadow: var(--shadow-sm);
+  padding: 18px 22px;
+  margin-bottom: 24px;
+
+  .flow-header {
+    display: flex;
+    align-items: baseline;
+    justify-content: space-between;
+    gap: 12px;
+    margin-bottom: 12px;
+    flex-wrap: wrap;
+  }
+
+  .flow-title {
+    font-size: 14px;
+    font-weight: 700;
+    color: var(--text-primary);
+  }
+
+  .flow-remaining {
+    font-size: 13px;
+    font-weight: 700;
+    color: var(--primary-700);
+
+    &.negative { color: var(--error); }
+  }
+
+  .flow-bar {
+    display: flex;
+    height: 14px;
+    width: 100%;
+    border-radius: var(--radius-full);
+    overflow: hidden;
+    background: var(--primary-light);
+    gap: 2px;
+
+    .flow-seg {
+      height: 100%;
+      transition: width var(--transition);
+      min-width: 0;
+
+      &.invest  { background: #6366f1; }
+      &.etf     { background: var(--warning); }
+      &.expense { background: var(--error); }
+    }
+  }
+
+  .flow-legend {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 16px;
+    margin-top: 12px;
+
+    .legend-item {
+      display: inline-flex;
+      align-items: center;
+      gap: 7px;
+      font-size: 12.5px;
+      color: var(--text-secondary);
+      font-weight: 500;
+
+      .dot {
+        width: 10px;
+        height: 10px;
+        border-radius: 3px;
+        display: inline-block;
+
+        &.invest    { background: #6366f1; }
+        &.etf       { background: var(--warning); }
+        &.expense   { background: var(--error); }
+        &.remaining { background: var(--primary-light); border: 1px solid var(--primary); }
+      }
+    }
+  }
+}
+
+// ============ Content layout ============
+.content-grid {
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+  max-width: 1100px;
+}
+
+.ticker {
+  font-family: 'DM Sans', 'Inter', sans-serif;
+  font-weight: 600;
+  letter-spacing: 0.3px;
+  color: var(--text-primary);
+}
+
+.tab-navigation .tab-item {
+  font-family: inherit;
+}
+
+// ============ Error banner ============
+.error-banner {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 12px 16px;
+  margin-bottom: 16px;
+  background: var(--error-light);
+  color: var(--error);
+  border-radius: var(--radius-md);
+  font-size: 14px;
+
+  span {
+    flex: 1;
+  }
+
+  button {
+    color: var(--error);
+    width: 32px;
+    height: 32px;
+    line-height: 32px;
+
+    mat-icon {
+      font-size: 18px;
+      width: 18px;
+      height: 18px;
+    }
+  }
+}
+
+// ============ Table card header with section icon ============
+.plan-card {
+  mat-card-header {
+    display: flex;
+    align-items: center;
+    gap: 14px;
+  }
+
+  .card-title-icon {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 40px;
+    height: 40px;
+    border-radius: var(--radius-md);
+    flex-shrink: 0;
+
+    mat-icon {
+      font-size: 22px;
+      width: 22px;
+      height: 22px;
+    }
+  }
+
+  &.plan-card--salary  .card-title-icon { background: var(--primary-light); mat-icon { color: var(--primary-700); } }
+  &.plan-card--invest  .card-title-icon { background: rgba(99, 102, 241, 0.12); mat-icon { color: #6366f1; } }
+  &.plan-card--etf     .card-title-icon { background: rgba(245, 158, 11, 0.14); mat-icon { color: var(--warning); } }
+  &.plan-card--expense .card-title-icon { background: rgba(239, 68, 68, 0.1); mat-icon { color: var(--error); } }
+}
+
+// ============ Section info note ============
+.section-note {
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+  padding: 12px 14px;
+  margin-bottom: 16px;
+  border-radius: var(--radius-md);
+  font-size: 13px;
+  line-height: 1.45;
+  color: var(--text-secondary);
+
+  mat-icon {
+    font-size: 18px;
+    width: 18px;
+    height: 18px;
+    flex-shrink: 0;
+    margin-top: 1px;
+  }
+
+  &.invest-note {
+    background: rgba(99, 102, 241, 0.08);
+    border: 1px solid rgba(99, 102, 241, 0.18);
+    mat-icon { color: #6366f1; }
+  }
+}
+
+// ============ Row icon chips & label cells ============
+.row-label-cell {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  min-width: 0;
+
+  &--account {
+    padding-left: 24px;
+  }
+}
+
+.row-label-text {
+  display: inline-flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 8px;
+  min-width: 0;
+}
+
+.row-icon-chip {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 32px;
+  height: 32px;
+  border-radius: var(--radius-md);
+  flex-shrink: 0;
+
+  mat-icon {
+    font-size: 18px;
+    width: 18px;
+    height: 18px;
+  }
+
+  &.chip-emerald { background: rgba(16, 185, 129, 0.14); color: #059669; }
+  &.chip-indigo  { background: rgba(99, 102, 241, 0.14); color: #6366f1; }
+  &.chip-violet  { background: rgba(139, 92, 246, 0.14); color: #7c3aed; }
+  &.chip-amber   { background: rgba(245, 158, 11, 0.16); color: #d97706; }
+  &.chip-amber-light { background: rgba(245, 158, 11, 0.1); color: #b45309; }
+  &.chip-rose    { background: rgba(239, 68, 68, 0.12); color: #dc2626; }
+  &.chip-slate   { background: var(--bg-secondary); color: var(--text-secondary); }
+  &.chip-slate-light { background: rgba(148, 163, 184, 0.12); color: #64748b; }
+}
+
+// ============ Contribution source badges ============
+.contrib-badge {
+  display: inline-block;
+  padding: 2px 8px;
+  border-radius: var(--radius-full);
+  font-size: 10.5px;
+  font-weight: 700;
+  letter-spacing: 0.02em;
+  text-transform: uppercase;
+  vertical-align: middle;
+
+  &.badge-personal { background: rgba(16, 185, 129, 0.14); color: #059669; }
+  &.badge-employer { background: rgba(99, 102, 241, 0.14); color: #4f46e5; }
+  &.badge-dpsp     { background: rgba(245, 158, 11, 0.18); color: #b45309; }
+  &.badge-member   { background: rgba(139, 92, 246, 0.14); color: #7c3aed; }
+}
+
+// ============ Share badges (percentage pills) ============
+.share-badge {
+  display: inline-block;
+  min-width: 52px;
+  padding: 3px 10px;
+  border-radius: var(--radius-full);
+  font-size: 12.5px;
+  font-weight: 700;
+  font-family: 'DM Sans', 'Inter', sans-serif;
+  text-align: center;
+  background: var(--bg-secondary);
+  color: var(--text-secondary);
+}
+
+.plan-table--salary  .share-badge { background: var(--primary-light); color: var(--primary-700); }
+.plan-table--invest  .share-badge { background: rgba(99, 102, 241, 0.12); color: #4f46e5; }
+.plan-table--etf     .share-badge { background: rgba(245, 158, 11, 0.16); color: #b45309; }
+.plan-table--expense .share-badge { background: rgba(239, 68, 68, 0.1); color: var(--error-dark); }
+
+// ============ Table body/footer polish ============
+.plan-table {
+  tbody tr:not(.add-row) td:first-child {
+    font-weight: 600;
+  }
+
+  // Investment hierarchy
+  &.plan-table--invest {
+    tbody tr.row-category td:first-child {
+      font-weight: 700;
+    }
+    tbody tr.row-subcategory td:first-child {
+      padding-left: 44px;
+      font-weight: 600;
+      color: var(--text-secondary);
+    }
+    tbody tr.row-account td:first-child {
+      font-weight: 500;
+      color: var(--text-primary);
+      font-size: 13.5px;
+    }
+    tbody tr.contrib-employer td.text-right,
+    tbody tr.contrib-dpsp td.text-right,
+    tbody tr.contrib-member td.text-right {
+      color: var(--text-secondary);
+      font-style: normal;
+    }
+  }
+
+  // ETF grouping
+  &.plan-table--etf {
+    tbody tr.row-group {
+      background: var(--bg-secondary);
+      td { font-weight: 700; color: var(--text-primary); border-bottom: 1px solid var(--border-medium); }
+    }
+    tbody tr.row-etf td { font-size: 13.5px; }
+    .account-cell { min-width: 180px; }
+    .account-badge {
+      display: inline-block;
+      padding: 3px 10px;
+      border-radius: var(--radius-full);
+      font-size: 11.5px;
+      font-weight: 700;
+      background: rgba(245, 158, 11, 0.14);
+      color: #b45309;
+      white-space: nowrap;
+    }
+  }
+
+  tbody tr.add-row td:first-child { padding-left: 24px; }
+
+  tfoot td {
+    font-size: 14px;
+    border-top: 2px solid var(--border-light);
+    padding-top: 16px;
+    padding-bottom: 16px;
+  }
+
+  &.plan-table--salary  tfoot td { background: var(--primary-50, var(--primary-light)); }
+  &.plan-table--invest  tfoot td { background: rgba(99, 102, 241, 0.07); }
+  &.plan-table--etf     tfoot td { background: rgba(245, 158, 11, 0.09); }
+  &.plan-table--expense tfoot td { background: rgba(239, 68, 68, 0.06); }
+
+  tfoot td:first-child { font-weight: 800; color: var(--text-primary); }
+}
+
+// ============ Editable table ============
+.editable-table {
+  .actions-col {
+    width: 96px;
+    white-space: nowrap;
+  }
+
+  td.actions-col {
+    padding-top: 8px;
+    padding-bottom: 8px;
+
+    button {
+      width: 32px;
+      height: 32px;
+      line-height: 32px;
+
+      mat-icon {
+        font-size: 18px;
+        width: 18px;
+        height: 18px;
+      }
+    }
+  }
+
+  .inline-input {
+    width: 100%;
+    max-width: 140px;
+    padding: 6px 8px;
+    font-size: 14px;
+    font-family: inherit;
+    color: var(--text-primary);
+    background: var(--bg-secondary);
+    border: 1px solid var(--border-medium);
+    border-radius: var(--radius-sm);
+
+    &:focus {
+      outline: none;
+      border-color: var(--primary);
+      background: var(--surface);
+    }
+
+    &.text-right {
+      text-align: right;
+    }
+  }
+
+  tr.add-row {
+    td {
+      background: var(--bg-secondary);
+    }
+
+    .inline-input {
+      max-width: 200px;
+    }
+  }
+}

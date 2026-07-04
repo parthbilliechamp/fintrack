@@ -11,7 +11,7 @@ import fs from 'fs';
 import path from 'path';
 import mongoose from 'mongoose';
 import bcrypt from 'bcrypt';
-import { User, Expense, Investment, InvestmentTransaction, ContributionLimit } from './models';
+import { User, Expense, Investment, ContributionLimit } from './models';
 
 const MONGODB_URI = process.env.MONGODB_URI || 'mongodb://localhost:27017/personal_finance_360';
 const DATA_DIR = path.join(process.cwd(), 'data');
@@ -39,14 +39,7 @@ interface JsonInvestment {
   accountType: string;
   investedAmount: number;
   currentValue: number;
-}
-
-interface JsonTransaction {
-  id: string;
-  userId: string;
-  amount: number;
-  date: string;
-  accountId: string;
+  yearInvestedAmount?: number;
 }
 
 interface JsonContributionLimit {
@@ -157,7 +150,8 @@ async function migrateInvestments(): Promise<number> {
         accountName: investment.accountName,
         accountType: investment.accountType,
         investedAmount: investment.investedAmount,
-        currentValue: investment.currentValue
+        currentValue: investment.currentValue,
+        yearInvestedAmount: investment.yearInvestedAmount ?? 0
       });
       await newInvestment.save();
       migrated++;
@@ -167,37 +161,6 @@ async function migrateInvestments(): Promise<number> {
   }
 
   console.log(`  ✅ Migrated ${migrated} investments`);
-  return migrated;
-}
-
-async function migrateTransactions(): Promise<number> {
-  console.log('\n💸 Migrating investment transactions...');
-  const transactions = readJsonFile<JsonTransaction>('investmentTransactions.json');
-  let migrated = 0;
-
-  for (const transaction of transactions) {
-    try {
-      const existing = await InvestmentTransaction.findById(transaction.id);
-      if (existing) {
-        console.log(`  ⏭️  Transaction '${transaction.id}' already exists, skipping`);
-        continue;
-      }
-
-      const newTransaction = new InvestmentTransaction({
-        _id: transaction.id,
-        userId: transaction.userId,
-        amount: transaction.amount,
-        date: new Date(transaction.date),
-        accountId: transaction.accountId
-      });
-      await newTransaction.save();
-      migrated++;
-    } catch (error: any) {
-      console.log(`  ❌ Error migrating transaction '${transaction.id}': ${error.message}`);
-    }
-  }
-
-  console.log(`  ✅ Migrated ${migrated} transactions`);
   return migrated;
 }
 
@@ -250,7 +213,6 @@ async function migrate() {
       users: await migrateUsers(),
       expenses: await migrateExpenses(),
       investments: await migrateInvestments(),
-      transactions: await migrateTransactions(),
       contributionLimits: await migrateContributionLimits()
     };
 
@@ -260,7 +222,6 @@ async function migrate() {
     console.log(`  Users:               ${results.users}`);
     console.log(`  Expenses:            ${results.expenses}`);
     console.log(`  Investments:         ${results.investments}`);
-    console.log(`  Transactions:        ${results.transactions}`);
     console.log(`  Contribution Limits: ${results.contributionLimits}`);
     console.log('═'.repeat(50));
     console.log('\n✅ Migration complete!');

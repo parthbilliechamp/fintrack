@@ -58,9 +58,9 @@ export class ExpenseHistoryComponent implements OnInit, AfterViewChecked {
   monthlyCategoryData = signal<MonthlyCategoryData[]>([]);
 
   categoryColors: { [key in ExpenseCategory]: string } = {
-    'Dine': '#FF6384',
-    'Grocery': '#36A2EB',
-    'Personal': '#FFCE56'
+    'Dine': '#f97316',
+    'Grocery': '#059669',
+    'Personal': '#6366f1'
   };
 
   constructor(private expenseService: ExpenseService) {
@@ -178,9 +178,9 @@ export class ExpenseHistoryComponent implements OnInit, AfterViewChecked {
           datasets: [{
             label: 'Monthly Expenses',
             data: [],
-            backgroundColor: 'rgba(63, 81, 181, 0.8)',
-            borderColor: '#3f51b5',
-            borderWidth: 1,
+            backgroundColor: 'rgba(5, 150, 105, 0.85)',
+            borderColor: '#059669',
+            borderWidth: 0,
             borderRadius: 6,
             barPercentage: 0.7
           }]
@@ -329,7 +329,7 @@ export class ExpenseHistoryComponent implements OnInit, AfterViewChecked {
     
     // Color bars based on whether above or below average
     this.overallChart.data.datasets[0].backgroundColor = monthlyAmounts.map(amount => 
-      amount > average ? 'rgba(244, 67, 54, 0.8)' : 'rgba(63, 81, 181, 0.8)'
+      amount > average ? 'rgba(220, 38, 38, 0.85)' : 'rgba(5, 150, 105, 0.85)'
     );
 
     this.overallChart.update();

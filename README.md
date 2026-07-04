@@ -31,7 +31,6 @@ A comprehensive personal finance management application built with Angular and N
 ### Investment Tracking
 - 💹 Monitor investment portfolio performance
 - 📉 Track contribution limits (RRSP, TFSA, FHSA, etc.)
-- 💵 Record investment transactions
 - 📊 View investment allocation and growth
 
 ### Dashboard & Analytics
@@ -69,7 +68,6 @@ fintrack/
 │   │   ├── contributionLimits.json
 │   │   ├── expenses.json
 │   │   ├── investments.json
-│   │   ├── investmentTransactions.json
 │   │   └── users.json
 │   ├── src/
 │   │   ├── index.ts           # Server entry point
@@ -100,7 +98,7 @@ fintrack/
 │   │   │   │   ├── investment-dashboard/
 │   │   │   │   ├── investment-form/
 │   │   │   │   ├── investment-list/
-│   │   │   │   └── transaction-form/
+│   │   │   │   └── ...
 │   │   │   └── shared/        # Shared components & services
 │   │   │       ├── components/
 │   │   │       ├── guards/

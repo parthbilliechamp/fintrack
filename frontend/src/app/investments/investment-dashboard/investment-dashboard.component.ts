@@ -78,15 +78,17 @@ export class InvestmentDashboardComponent implements OnInit, AfterViewChecked {
           {
             label: 'Invested',
             data: [],
-            borderColor: '#3f51b5',
-            backgroundColor: 'rgba(63, 81, 181, 0.1)',
+            borderColor: '#6366f1',
+            backgroundColor: 'rgba(99, 102, 241, 0.12)',
+            tension: 0.35,
             fill: true
           },
           {
             label: 'Current Value',
             data: [],
-            borderColor: '#4caf50',
-            backgroundColor: 'rgba(76, 175, 80, 0.1)',
+            borderColor: '#059669',
+            backgroundColor: 'rgba(5, 150, 105, 0.12)',
+            tension: 0.35,
             fill: true
           }
         ]
@@ -134,11 +136,11 @@ export class InvestmentDashboardComponent implements OnInit, AfterViewChecked {
         datasets: [{
           data: [],
           backgroundColor: [
-            '#3f51b5',
-            '#f44336',
-            '#4caf50',
-            '#ff9800',
-            '#9c27b0'
+            '#059669',
+            '#6366f1',
+            '#f59e0b',
+            '#0ea5e9',
+            '#a855f7'
           ]
         }]
       },

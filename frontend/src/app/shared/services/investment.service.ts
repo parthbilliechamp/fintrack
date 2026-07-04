@@ -1,7 +1,7 @@
 import { Injectable } from '@angular/core';
 import { HttpClient } from '@angular/common/http';
 import { BehaviorSubject, Observable, map, tap, catchError } from 'rxjs';
-import { Investment, ContributionLimit, InvestmentTransaction } from '../interfaces/investment.interface';
+import { Investment, ContributionLimit } from '../interfaces/investment.interface';
 import { AuthService } from './auth.service';
 import { LoggerService, ContextLogger } from './logger.service';
 import { environment } from '../../../environments/environment';
@@ -15,11 +15,9 @@ export class InvestmentService {
 
   private investmentsSubject: BehaviorSubject<Investment[]>;
   private contributionLimitsSubject: BehaviorSubject<ContributionLimit[]>;
-  private transactionsSubject: BehaviorSubject<InvestmentTransaction[]>;
 
   public investments$: Observable<Investment[]>;
   public contributionLimits$: Observable<ContributionLimit[]>;
-  public transactions$: Observable<InvestmentTransaction[]>;
 
   constructor(
     private http: HttpClient,
@@ -29,11 +27,9 @@ export class InvestmentService {
     this.logger = this.loggerService.createContextLogger('InvestmentService');
     this.investmentsSubject = new BehaviorSubject<Investment[]>([]);
     this.contributionLimitsSubject = new BehaviorSubject<ContributionLimit[]>([]);
-    this.transactionsSubject = new BehaviorSubject<InvestmentTransaction[]>([]);
 
     this.investments$ = this.investmentsSubject.asObservable();
     this.contributionLimits$ = this.contributionLimitsSubject.asObservable();
-    this.transactions$ = this.transactionsSubject.asObservable();
 
     // Load data when user logs in
     this.authService.currentUser$.subscribe(user => {
@@ -44,7 +40,6 @@ export class InvestmentService {
         this.logger.debug('User logged out, clearing investment data');
         this.investmentsSubject.next([]);
         this.contributionLimitsSubject.next([]);
-        this.transactionsSubject.next([]);
       }
     });
   }
@@ -77,19 +72,6 @@ export class InvestmentService {
       catchError(error => {
         this.logger.error('Error loading contribution limits', error);
         this.contributionLimitsSubject.next([]);
-        return [];
-      })
-    ).subscribe();
-
-    // Load transactions
-    this.http.get<InvestmentTransaction[]>(`${this.API_URL}/${user.id}/transactions/all`).pipe(
-      tap(transactions => {
-        this.logger.info('Transactions loaded', { count: transactions.length });
-        this.transactionsSubject.next(transactions);
-      }),
-      catchError(error => {
-        this.logger.error('Error loading transactions', error);
-        this.transactionsSubject.next([]);
         return [];
       })
     ).subscribe();
@@ -244,96 +226,6 @@ export class InvestmentService {
   getContributionLimits(year: number): Observable<ContributionLimit[]> {
     return this.contributionLimits$.pipe(
       map(limits => limits.filter(l => l.year === year))
-    );
-  }
-
-  // ============ INVESTMENT TRANSACTIONS MANAGEMENT ============
-
-  addTransaction(transaction: Omit<InvestmentTransaction, 'id' | 'userId'>): Observable<InvestmentTransaction> {
-    const user = this.authService.getCurrentUser();
-    if (!user) {
-      this.logger.error('Cannot add transaction: user not authenticated');
-      throw new Error('User not authenticated');
-    }
-
-    this.logger.debug('Adding transaction', { accountId: transaction.accountId, amount: transaction.amount });
-    return this.http.post<{ transaction: InvestmentTransaction; updatedInvestment: any }>(`${this.API_URL}/${user.id}/transactions`, transaction).pipe(
-      tap(response => {
-        this.logger.info('Transaction added successfully', { transactionId: response.transaction.id });
-        // Add the new transaction
-        const transactions = this.transactionsSubject.value;
-        transactions.push(response.transaction);
-        this.transactionsSubject.next([...transactions]);
-        
-        // Update the investment in the local state
-        if (response.updatedInvestment) {
-          this.logger.debug('Updating local investment state after transaction');
-          const investments = this.investmentsSubject.value;
-          const index = investments.findIndex(i => i.id === response.updatedInvestment.id);
-          if (index !== -1) {
-            investments[index] = response.updatedInvestment;
-            this.investmentsSubject.next([...investments]);
-          }
-        }
-
-        // Account values are updated by a DB trigger after transaction insert.
-        // Reload to sync latest investment totals in UI.
-        this.reloadData();
-      }),
-      map(response => response.transaction),
-      catchError(error => {
-        this.logger.error('Error adding transaction', error);
-        throw error;
-      })
-    );
-  }
-
-  updateTransaction(id: string, transaction: Omit<InvestmentTransaction, 'id' | 'userId'>): Observable<InvestmentTransaction> {
-    const user = this.authService.getCurrentUser();
-    if (!user) {
-      this.logger.error('Cannot update transaction: user not authenticated');
-      throw new Error('User not authenticated');
-    }
-
-    this.logger.debug('Updating transaction', { transactionId: id, accountId: transaction.accountId });
-    return this.http.put<InvestmentTransaction>(`${this.API_URL}/${user.id}/transactions/${id}`, transaction).pipe(
-      tap(updatedTransaction => {
-        this.logger.info('Transaction updated successfully', { transactionId: id });
-        const transactions = this.transactionsSubject.value;
-        const index = transactions.findIndex(t => t.id === id);
-        if (index !== -1) {
-          transactions[index] = updatedTransaction;
-          this.transactionsSubject.next([...transactions]);
-        }
-        this.reloadData();
-      }),
-      catchError(error => {
-        this.logger.error('Error updating transaction', { transactionId: id, error });
-        throw error;
-      })
-    );
-  }
-
-  deleteTransaction(id: string): Observable<any> {
-    const user = this.authService.getCurrentUser();
-    if (!user) {
-      this.logger.error('Cannot delete transaction: user not authenticated');
-      throw new Error('User not authenticated');
-    }
-
-    this.logger.debug('Deleting transaction', { transactionId: id });
-    return this.http.delete(`${this.API_URL}/${user.id}/transactions/${id}`).pipe(
-      tap(() => {
-        this.logger.info('Transaction deleted successfully', { transactionId: id });
-        const transactions = this.transactionsSubject.value;
-        const filteredTransactions = transactions.filter(t => t.id !== id);
-        this.transactionsSubject.next(filteredTransactions);
-        this.reloadData();
-      }),
-      catchError(error => {
-        this.logger.error('Error deleting transaction', { transactionId: id, error });
-        throw error;
-      })
     );
   }
 

@@ -130,11 +130,11 @@
         font-weight: 500;
         
         &.mat-mdc-raised-button {
-          background: #3b82f6 !important;
+          background: var(--primary) !important;
           color: white !important;
           
           &:hover {
-            background: #2563eb !important;
+            background: var(--primary-hover) !important;
           }
           
           &:disabled {

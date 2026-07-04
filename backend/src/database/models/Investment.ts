@@ -7,6 +7,7 @@ export interface IInvestment {
   accountType: 'RRSP' | 'TFSA' | 'FHSA' | 'Savings';
   investedAmount: number;
   currentValue: number;
+  yearInvestedAmount: number;
   createdAt: Date;
   updatedAt: Date;
 }
@@ -46,6 +47,12 @@ const investmentSchema = new Schema<IInvestment>(
       type: Number,
       required: [true, 'Current value is required'],
       min: [0, 'Current value must be a non-negative number']
+    },
+    yearInvestedAmount: {
+      type: Number,
+      required: [true, 'Year invested amount is required'],
+      default: 0,
+      min: [0, 'Year invested amount must be a non-negative number']
     }
   },
   {

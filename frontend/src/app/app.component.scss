@@ -1,6 +1,6 @@
-// ============================================
-// App Component - FinTrack Light Sidebar Theme
-// ============================================
+/* ==========================================================================
+   App Shell — Premium dark sidebar
+   ========================================================================== */
 
 .sidenav-container {
   height: 100vh;
@@ -9,278 +9,225 @@
 }
 
 mat-sidenav {
-  width: 260px;
-  background: var(--sidebar-bg);
-  border-right: 1px solid var(--border-light) !important;
+  width: 264px;
+  background: var(--sidebar-bg) !important;
+  border-right: none !important;
+  background-image:
+    radial-gradient(120% 60% at 0% 0%, rgba(16, 185, 129, 0.10) 0%, rgba(16, 185, 129, 0) 55%),
+    linear-gradient(180deg, var(--sidebar-bg) 0%, var(--sidebar-bg-accent) 100%);
 }
 
-.mat-drawer-side {
-  border: none;
-}
+.mat-drawer-side { border: none; }
 
 .sidenav-content {
   display: flex;
   flex-direction: column;
   height: 100%;
+  color: var(--sidebar-text);
 }
 
-// ============================================
-// Brand Header
-// ============================================
+/* -- Brand -- */
 .sidenav-header {
-  padding: 24px 20px;
-  
+  padding: 24px 20px 20px;
+  margin-bottom: 4px;
+
   .brand {
     display: flex;
     align-items: center;
     gap: 12px;
     text-decoration: none;
-    
+
     .brand-icon {
       width: 40px;
       height: 40px;
-      background: var(--primary);
-      border-radius: 10px;
+      background: var(--primary-gradient);
+      border-radius: 11px;
       display: flex;
       align-items: center;
       justify-content: center;
-      
-      mat-icon {
-        color: white;
-        font-size: 22px;
-        width: 22px;
-        height: 22px;
-      }
+      box-shadow: var(--shadow-primary);
+
+      mat-icon { color: #fff; font-size: 22px; width: 22px; height: 22px; }
     }
-    
+
     .brand-name {
       font-size: 20px;
-      font-weight: 700;
-      color: var(--text-primary);
-      letter-spacing: -0.5px;
+      font-weight: 800;
+      color: #fff;
+      letter-spacing: -0.4px;
     }
   }
 }
 
-// ============================================
-// Navigation
-// ============================================
+/* -- Navigation -- */
 mat-nav-list {
-  padding: 12px 12px;
+  padding: 8px 12px !important;
   flex: 1;
-  
+
+  /* Force Angular Material MDC list tokens to use the light sidebar text color
+     so labels stay readable on the dark background. */
+  --mdc-list-list-item-label-text-color: var(--sidebar-text);
+  --mdc-list-list-item-hover-label-text-color: var(--sidebar-text-active);
+  --mdc-list-list-item-focus-label-text-color: var(--sidebar-text-active);
+  --mat-list-active-indicator-color: transparent;
+
   .nav-item {
-    height: 48px;
+    height: 46px;
     margin-bottom: 4px;
     border-radius: var(--radius-md);
-    transition: all 0.15s ease;
-    font-weight: 500;
-    font-size: 15px;
-    color: var(--sidebar-text);
+    transition: all var(--transition-fast);
+    font-weight: 600;
+    font-size: 14.5px;
+    color: var(--sidebar-text) !important;
     border-left: 3px solid transparent;
-    padding-left: 16px !important;
-    
+    padding-left: 15px !important;
+
     mat-icon {
-      margin-right: 14px;
+      margin-right: 13px;
       color: var(--sidebar-text);
-      transition: color 0.15s ease;
-      font-size: 20px;
-      width: 20px;
-      height: 20px;
+      transition: color var(--transition-fast);
+      font-size: 20px; width: 20px; height: 20px;
     }
-    
-    span {
-      color: inherit;
+
+    span,
+    .mdc-list-item__primary-text {
+      color: inherit !important;
     }
-    
+
     &:hover {
       background: var(--sidebar-hover);
-      color: var(--sidebar-text-active);
-      
-      mat-icon {
-        color: var(--sidebar-text-active);
-      }
+      color: var(--sidebar-text-active) !important;
+      mat-icon { color: var(--sidebar-text-active); }
     }
-    
+
     &.active {
       background: var(--sidebar-active-bg);
-      color: var(--sidebar-text-active);
+      color: var(--sidebar-text-active) !important;
       border-left-color: var(--sidebar-active-border);
-      font-weight: 600;
-      
-      mat-icon {
-        color: var(--sidebar-active-border);
-      }
-      
-      &:hover {
-        background: var(--sidebar-active-bg);
-      }
+      font-weight: 700;
+      mat-icon { color: var(--primary-400); }
+      &:hover { background: var(--sidebar-active-bg); }
     }
   }
 }
 
-// ============================================
-// User Section
-// ============================================
+/* -- User section -- */
 .user-section {
-  padding: 20px;
-  border-top: 1px solid var(--border-light);
-  margin-top: auto;
-  
+  padding: 16px;
+  margin: 8px 12px 16px;
+  border-radius: var(--radius-lg);
+  background: rgba(255, 255, 255, 0.04);
+  border: 1px solid var(--sidebar-border);
+
   .user-info {
     display: flex;
-    align-items: flex-start;
+    align-items: center;
     gap: 12px;
-    margin-bottom: 16px;
+    margin-bottom: 14px;
   }
-  
+
   .user-avatar {
     width: 40px;
     height: 40px;
-    background: var(--bg-secondary);
-    border-radius: 50%;
+    background: var(--primary-gradient);
+    border-radius: var(--radius-full);
     display: flex;
     align-items: center;
     justify-content: center;
     flex-shrink: 0;
-    
-    mat-icon {
-      color: var(--sidebar-text);
-      font-size: 20px;
-      width: 20px;
-      height: 20px;
-    }
+    color: #fff;
+    box-shadow: var(--shadow-primary);
+    mat-icon { color: #fff; font-size: 20px; width: 20px; height: 20px; }
   }
-  
+
   .user-details {
     display: flex;
     flex-direction: column;
     min-width: 0;
-    
+
     .user-label {
-      font-size: 11px;
-      color: var(--sidebar-text);
+      font-size: 10px;
+      color: var(--slate-400);
       text-transform: uppercase;
-      letter-spacing: 0.5px;
-      margin-bottom: 4px;
+      letter-spacing: 0.6px;
+      margin-bottom: 3px;
     }
-    
     .user-name {
       font-size: 14px;
-      font-weight: 600;
-      color: var(--text-primary);
-      white-space: nowrap;
-      overflow: hidden;
-      text-overflow: ellipsis;
+      font-weight: 700;
+      color: #fff;
+      white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
     }
-    
     .user-email {
       font-size: 12px;
-      color: var(--sidebar-text);
-      white-space: nowrap;
-      overflow: hidden;
-      text-overflow: ellipsis;
+      color: var(--slate-400);
+      white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
     }
   }
-  
+
   .logout-btn {
     width: 100%;
     justify-content: flex-start;
-    color: #ef4444;
-    font-weight: 500;
+    color: #fca5a5 !important;
+    font-weight: 600;
     padding: 8px 12px;
     border-radius: var(--radius-md);
-    
-    mat-icon {
-      margin-right: 8px;
-      font-size: 18px;
-      width: 18px;
-      height: 18px;
-    }
-    
-    &:hover {
-      background: rgba(239, 68, 68, 0.1);
-    }
+
+    mat-icon { margin-right: 8px; font-size: 18px; width: 18px; height: 18px; }
+    &:hover { background: rgba(239, 68, 68, 0.14); color: #fecaca !important; }
   }
 }
 
-// ============================================
-// Main Content
-// ============================================
+/* -- Main content -- */
 .main-content {
-  padding: 32px 40px;
+  padding: 34px 40px;
   max-width: 1400px;
   margin: 0 auto;
   box-sizing: border-box;
   min-height: 100vh;
   background: var(--bg-main);
-  
-  &.with-mobile-header {
-    padding-top: 16px;
+
+  &.with-mobile-header { padding-top: 16px; }
+
+  /* Auth pages render full-bleed (no shell padding / max-width) */
+  &.auth-mode {
+    padding: 0;
+    max-width: none;
+    min-height: 100vh;
   }
 }
 
-// ============================================
-// Mobile Header
-// ============================================
+/* -- Mobile header -- */
 .mobile-header {
   display: flex;
   align-items: center;
   padding: 12px 16px;
-  background: var(--surface);
-  border-bottom: 1px solid var(--border-light);
+  background: var(--sidebar-bg);
+  border-bottom: 1px solid var(--sidebar-border);
   position: sticky;
   top: 0;
   z-index: 100;
-  
-  .menu-btn {
-    color: var(--text-primary);
-    margin-right: 8px;
-  }
-  
+
+  .menu-btn { color: #fff; margin-right: 8px; }
+
   .mobile-brand {
     display: flex;
     align-items: center;
     gap: 8px;
     text-decoration: none;
-    color: var(--text-primary);
-    
-    mat-icon {
-      color: var(--primary);
-      font-size: 24px;
-      width: 24px;
-      height: 24px;
-    }
-    
-    span {
-      font-size: 18px;
-      font-weight: 700;
-      letter-spacing: -0.5px;
-    }
+    color: #fff;
+    mat-icon { color: var(--primary-400); font-size: 24px; width: 24px; height: 24px; }
+    span { font-size: 18px; font-weight: 800; letter-spacing: -0.4px; }
   }
-  
-  .spacer {
-    flex: 1;
-  }
+
+  .spacer { flex: 1; }
 }
 
-// ============================================
-// Mobile Styles
-// ============================================
 @media (max-width: 600px) {
   .main-content {
     padding: 20px 16px;
-    
-    &.with-mobile-header {
-      padding-top: 16px;
-    }
+    &.with-mobile-header { padding-top: 16px; }
   }
-  
-  mat-sidenav {
-    width: 280px;
-  }
-  
-  .sidenav-header {
-    padding: 20px 16px;
-  }
+  mat-sidenav { width: 280px; }
+  .sidenav-header { padding: 20px 16px; }
 }

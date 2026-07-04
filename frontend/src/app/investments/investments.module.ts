@@ -5,7 +5,6 @@ import { InvestmentsRoutingModule } from './investments-routing.module';
 import { InvestmentListComponent } from './investment-list/investment-list.component';
 import { InvestmentFormComponent } from './investment-form/investment-form.component';
 import { InvestmentDashboardComponent } from './investment-dashboard/investment-dashboard.component';
-import { ContributionLimitsComponent } from './contribution-limits/contribution-limits.component';
 
 @NgModule({
   imports: [
@@ -14,8 +13,7 @@ import { ContributionLimitsComponent } from './contribution-limits/contribution-
     ReactiveFormsModule,
     InvestmentListComponent,
     InvestmentFormComponent,
-    InvestmentDashboardComponent,
-    ContributionLimitsComponent
+    InvestmentDashboardComponent
   ]
 })
 export class InvestmentsModule { }

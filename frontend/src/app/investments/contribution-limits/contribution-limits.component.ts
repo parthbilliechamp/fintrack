@@ -41,8 +41,7 @@ interface LimitRow {
 })
 export class ContributionLimitsComponent implements OnInit, OnDestroy {
   accountTypes = ['RRSP', 'TFSA', 'FHSA'];
-  selectedYear: number;
-  years: number[];
+  currentYear: number;
   limitRows: LimitRow[] = [];
   private contributionLimits: ContributionLimit[] = [];
   private destroy$ = new Subject<void>();
@@ -50,9 +49,7 @@ export class ContributionLimitsComponent implements OnInit, OnDestroy {
   constructor(
     private investmentService: InvestmentService
   ) {
-    const currentYear = new Date().getFullYear();
-    this.selectedYear = currentYear;
-    this.years = Array.from({ length: 5 }, (_, i) => currentYear + i);
+    this.currentYear = new Date().getFullYear();
     
     // Initialize with predefined rows
     this.initializeLimitRows();
@@ -72,11 +69,6 @@ export class ContributionLimitsComponent implements OnInit, OnDestroy {
     this.investmentService.investments$.pipe(takeUntil(this.destroy$)).subscribe(() => {
       this.loadContributionStatus();
     });
-    
-    // Subscribe to transactions changes to reload contribution status
-    this.investmentService.transactions$.pipe(takeUntil(this.destroy$)).subscribe(() => {
-      this.loadContributionStatus();
-    });
   }
 
   ngOnDestroy(): void {
@@ -94,7 +86,7 @@ export class ContributionLimitsComponent implements OnInit, OnDestroy {
   }
 
   loadContributionStatus(): void {
-    this.investmentService.getContributionStatus(this.selectedYear)
+    this.investmentService.getContributionStatus(this.currentYear)
       .subscribe(status => {
         console.log('Contribution status loaded:', status);
         // Update used values from status, but also sync limits and find limitIds
@@ -107,7 +99,7 @@ export class ContributionLimitsComponent implements OnInit, OnDestroy {
             
             // Find and set the limitId from contributionLimits
             const existingLimit = this.contributionLimits.find(
-              l => l.year === this.selectedYear && l.accountType === s.accountType
+              l => l.year === this.currentYear && l.accountType === s.accountType
             );
             if (existingLimit) {
               row.limitId = existingLimit.id;
@@ -119,7 +111,7 @@ export class ContributionLimitsComponent implements OnInit, OnDestroy {
   }
 
   private updateLimitRowsFromLimits(): void {
-    const yearLimits = this.contributionLimits.filter(l => l.year === this.selectedYear);
+    const yearLimits = this.contributionLimits.filter(l => l.year === this.currentYear);
     console.log('Updating limit rows from limits:', yearLimits);
     
     this.limitRows.forEach(row => {
@@ -133,13 +125,6 @@ export class ContributionLimitsComponent implements OnInit, OnDestroy {
     });
   }
 
-  onYearChange(year: number): void {
-    this.selectedYear = year;
-    this.initializeLimitRows();
-    this.updateLimitRowsFromLimits();
-    this.loadContributionStatus();
-  }
-
   onLimitChange(item: LimitRow): void {
     // Update remaining value immediately
     item.remaining = item.limit - item.used;
@@ -150,7 +135,7 @@ export class ContributionLimitsComponent implements OnInit, OnDestroy {
       // Update existing limit using the stored limitId
       console.log('Updating existing limit with id:', item.limitId);
       this.investmentService.updateContributionLimit(item.limitId, {
-        year: this.selectedYear,
+        year: this.currentYear,
         accountType: item.accountType as 'RRSP' | 'TFSA' | 'FHSA',
         limit: item.limit
       }).subscribe({
@@ -170,7 +155,7 @@ export class ContributionLimitsComponent implements OnInit, OnDestroy {
       // Create new limit
       console.log('Creating new limit for:', item.accountType);
       this.investmentService.addContributionLimit({
-        year: this.selectedYear,
+        year: this.currentYear,
         accountType: item.accountType as 'RRSP' | 'TFSA' | 'FHSA',
         limit: item.limit
       }).subscribe({

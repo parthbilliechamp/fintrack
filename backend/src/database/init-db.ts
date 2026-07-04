@@ -56,7 +56,7 @@ const collectionSchemas = {
     validator: {
       $jsonSchema: {
         bsonType: 'object',
-        required: ['_id', 'userId', 'accountName', 'accountType', 'investedAmount', 'currentValue'],
+        required: ['_id', 'userId', 'accountName', 'accountType', 'investedAmount', 'currentValue', 'yearInvestedAmount'],
         properties: {
           _id: { bsonType: 'string' },
           userId: { bsonType: 'string', description: 'Reference to users._id' },
@@ -65,25 +65,9 @@ const collectionSchemas = {
             enum: ['RRSP', 'TFSA', 'FHSA', 'Savings'],
             description: 'Account type'
           },
-          investedAmount: { bsonType: 'number', minimum: 0, description: 'Total invested' },
-          currentValue: { bsonType: 'number', minimum: 0, description: 'Current value' },
-          createdAt: { bsonType: 'date' },
-          updatedAt: { bsonType: 'date' }
-        }
-      }
-    }
-  },
-  investmenttransactions: {
-    validator: {
-      $jsonSchema: {
-        bsonType: 'object',
-        required: ['_id', 'userId', 'amount', 'date', 'accountId'],
-        properties: {
-          _id: { bsonType: 'string' },
-          userId: { bsonType: 'string', description: 'Reference to users._id' },
-          amount: { bsonType: 'number', description: 'Transaction amount (can be negative)' },
-          date: { bsonType: 'date', description: 'Transaction date' },
-          accountId: { bsonType: 'string', description: 'Reference to investments._id' },
+          investedAmount: { bsonType: 'number', minimum: 0, description: 'Total invested till date' },
+          currentValue: { bsonType: 'number', minimum: 0, description: 'Total current value till date' },
+          yearInvestedAmount: { bsonType: 'number', minimum: 0, description: 'Invested amount for the current year' },
           createdAt: { bsonType: 'date' },
           updatedAt: { bsonType: 'date' }
         }
@@ -125,12 +109,6 @@ const indexDefinitions: Record<string, Array<{ key: Record<string, 1 | -1>; opti
   investments: [
     { key: { userId: 1 }, options: { name: 'userId' } },
     { key: { userId: 1, accountType: 1 }, options: { name: 'userId_accountType' } }
-  ],
-  investmenttransactions: [
-    { key: { userId: 1 }, options: { name: 'userId' } },
-    { key: { userId: 1, date: -1 }, options: { name: 'userId_date' } },
-    { key: { accountId: 1, date: -1 }, options: { name: 'accountId_date' } },
-    { key: { userId: 1, accountId: 1 }, options: { name: 'userId_accountId' } }
   ],
   contributionlimits: [
     { key: { userId: 1, year: 1 }, options: { name: 'userId_year' } },

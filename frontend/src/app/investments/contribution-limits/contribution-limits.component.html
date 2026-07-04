@@ -1,33 +1,13 @@
 <div class="contribution-limits-container">
   <!-- Page Header -->
   <div class="page-header">
-    <h2>Contribution Limits</h2>
-    <p class="subtitle">Set and track your contribution limits by account type</p>
-  </div>
-
-  <!-- Back Button -->
-  <div class="back-button-container">
-    <button mat-flat-button class="back-btn" routerLink="/investments">
-      <mat-icon>arrow_back</mat-icon>
-      Back to Investments
-    </button>
-  </div>
-
-  <div class="limits-header">
-    <h3>{{ selectedYear }} Contribution Limits</h3>
-    <mat-form-field appearance="outline">
-      <mat-label>Year</mat-label>
-      <mat-select [(value)]="selectedYear" (selectionChange)="onYearChange($event.value)">
-        <mat-option *ngFor="let year of years" [value]="year">
-          {{ year }}
-        </mat-option>
-      </mat-select>
-    </mat-form-field>
+    <h2>Contribution Limit Tracker</h2>
+    <p class="subtitle">Track your contribution limits and usage for {{ currentYear }}</p>
   </div>
 
   <mat-card class="limits-table-card">
     <mat-card-header>
-      <mat-card-title>Contribution Status for {{ selectedYear }}</mat-card-title>
+      <mat-card-title>Contribution Status for {{ currentYear }}</mat-card-title>
     </mat-card-header>
     <mat-card-content>
       <table class="editable-limits-table">
